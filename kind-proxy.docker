@@ -1,0 +1,19 @@
+FROM alpine as kubectl
+LABEL stage=intermediate 
+ADD https://storage.googleapis.com/kubernetes-release/release/v1.19.1/bin/linux/amd64/kubectl /usr/local/bin/kubectl
+ENV HOME=/config
+RUN set -x && \
+    apk add --no-cache curl ca-certificates && \
+    chmod +x /usr/local/bin/kubectl
+ 
+# final container
+FROM alpine
+WORKDIR /root
+COPY --from=kubectl /usr/local/bin/kubectl /usr/local/bin/kubectl
+COPY loadBalancer.jq /root/loadBalancer.jq
+COPY iptables.sync.sh /root/iptables.sync.sh
+RUN apk add --no-cache \
+	jq \
+	iptables && \
+	chmod +x /root/iptables.sync.sh
+ENTRYPOINT ["/root/iptables.sync.sh"]

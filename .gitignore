@@ -1,0 +1,7 @@
+**/.localStorage
+**/state
+**/cfg
+**/node_modules
+**/package-lock.json
+**/params.json
+**/*.iso
