@@ -10,7 +10,7 @@ spec:
     namespace: planespotter
     server: 'https://kubernetes.default.svc'
   source:
-    path: apps/planespotter
+    path: apps/01-all-in-one
     repoURL: 'https://github.com/apnex/labops.git'
     targetRevision: HEAD
   project: default
