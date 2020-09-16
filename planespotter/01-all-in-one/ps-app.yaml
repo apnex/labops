@@ -2,54 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: planespotter-frontend
-  namespace: planespotter
-  labels:
-    app: planespotter-frontend
-    tier: frontend
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: planespotter-frontend
-  template:
-    metadata:
-      labels:
-        app: planespotter-frontend
-        tier: frontend
-    spec:
-      containers:
-      - name: planespotter-fe
-        image: yfauser/planespotter-frontend:d0b30abec8bfdbde01a36d07b30b2a3802d9ccbb
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: PLANESPOTTER_API_ENDPOINT
-          value: planespotter-svc
-        - name: TIMEOUT_REG
-          value: "5"
-        - name: TIMEOUT_OTHER
-          value: "5"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: planespotter-frontend
-  namespace: planespotter
-  labels:
-    app: planespotter-frontend
-spec:
-  selector:
-    app: planespotter-frontend
-  ports:
-    - port: 80
-      targetPort: 80
-  type: LoadBalancer
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: planespotter-app
-  namespace: planespotter
   labels:
     app: planespotter
     tier: app-tier
@@ -81,10 +34,9 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: planespotter-app-cfg
-  namespace: planespotter
 data:
   config.cfg: |
-    DATABASE_URL = '172.20.21.10'
+    DATABASE_URL = 'mysql' ## can set to fqdn/IP
     DATABASE_USER = 'planespotter'
     DATABASE_PWD = 'VMware1!'
     DATABASE = 'planespotter'
@@ -96,7 +48,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: planespotter-svc
-  namespace: planespotter
   labels:
     app: planespotter-svc
 spec:
@@ -110,7 +61,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis-server
-  namespace: planespotter
 spec:
   replicas: 1
   selector:
@@ -133,7 +83,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis-server
-  namespace: planespotter
   labels:
     app: redis-server
     tier: backend
@@ -148,7 +97,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: adsb-sync
-  namespace: planespotter
   labels:
     app: adsb-sync
     tier: data-sync
@@ -178,7 +126,6 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: adsb-sync-cfg
-  namespace: planespotter
 data:
   config.ini: |
     [main]

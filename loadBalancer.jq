@@ -1,16 +1,17 @@
 .items? |
 if (length > 0) then
 	map(select((.status.loadBalancer.ingress | length) != 0)) | # filter for external IPs
-	map({
-		"ports": .spec.ports,
-		"ingress": .status.loadBalancer.ingress
-	}) |
+	map(
+		.status.loadBalancer.ingress[0].ip as $externalIP
+		| .spec.ports[] |
+		.externalIP |= $externalIP
+	) |
 	map(
 		"-p "
-			+ .ports[0].protocol +
+			+ .protocol +
 		" --dport "
-			+ (.ports[0].port|tostring) +
+			+ (.port|tostring) +
 		" -j DNAT --to "
-			+ .ingress[0].ip + ":" + (.ports[0].targetPort|tostring)
+			+ .externalIP + ":" + (.port|tostring)
 	)
 else empty end

@@ -2,12 +2,10 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: mysql-claim
-  namespace: planespotter
-  annotations:
-    volume.beta.kubernetes.io/storage-class: thin-disk
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: standard
   resources:
     requests:
       storage: 2Gi
