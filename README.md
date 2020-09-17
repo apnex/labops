@@ -1,3 +1,5 @@
+argocd app set planespotter-all-in-one --sync-option CreateNamespace=true
+
 ### base OS prep
 ```
 yum install -y epel-release
@@ -41,9 +43,6 @@ cat <<-EOF > /etc/sysctl.d/k8s.conf
 EOF
 sysctl --system
 ```
-####echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
-####sysctl -p /etc/sysctl.conf
-####sysctl net.ipv4.ip_forward
 
 ---
 ### install kubectl
