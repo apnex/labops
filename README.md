@@ -86,11 +86,15 @@ cd argo
 ./argo.patch.sh
 ```
 
+### install argocd cli
+```
+export ARGOCD_SERVER=172.19.255.1
+curl -kLo /usr/local/bin/argocd https://${ARGOCD_SERVER}/download/argocd-linux-amd64
+chmod +x /usr/local/bin/argocd
+argocd version --insecure
+```
+
 ### reset argocd password
 ```
 ./argo.password.sh
-export ARGOCD_SERVER=172.19.255.1
-curl -sSL -o /usr/local/bin/argocd https://${ARGOCD_SERVER}/download/argocd-linux-amd64
-argocd app sync guestbook
-argocd app wait guestbook
 ```
