@@ -34,6 +34,13 @@ systemctl enable docker
 systemctl start docker
 ```
 
+### enable ip-forwarding
+```
+echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+sysctl -p /etc/sysctl.conf
+sysctl net.ipv4.ip_forward
+```
+
 ---
 ### install kubectl
 ```
@@ -67,13 +74,21 @@ cd ..
 ### install metallb
 ```
 cd metallb
-./metallb-install.sh
+./metallb.install.sh
 cd ..
 ```
 
 ---
 ### install argocd
 ```
+cd argo
+./argo.install.sh
+./argo.patch.sh
+```
+
+### reset argocd password
+```
+./argo.password.sh
 export ARGOCD_SERVER=172.19.255.1
 curl -sSL -o /usr/local/bin/argocd https://${ARGOCD_SERVER}/download/argocd-linux-amd64
 argocd app sync guestbook
