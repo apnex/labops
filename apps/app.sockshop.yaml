@@ -6,11 +6,14 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  destination:
-    namespace: default
-    server: 'https://kubernetes.default.svc'
+  project: default
   source:
     path: sock-shop/base
     repoURL: 'https://github.com/argoproj/argocd-example-apps'
     targetRevision: HEAD
-  project: default
+  destination:
+    namespace: default
+    server: 'https://kubernetes.default.svc'
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
