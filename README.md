@@ -54,6 +54,7 @@ kind version
 ```
 yum -y install git
 git clone https://github.com/apnex/labops
+cd labops
 ```
 
 ### start kind
