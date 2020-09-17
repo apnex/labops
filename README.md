@@ -1,4 +1,3 @@
----
 ### base OS prep
 ```
 hostnamectl set-hostname web01
@@ -79,4 +78,3 @@ curl -sSL -o /usr/local/bin/argocd https://${ARGOCD_SERVER}/download/argocd-linu
 argocd app sync guestbook
 argocd app wait guestbook
 ```
----
