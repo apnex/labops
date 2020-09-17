@@ -11,6 +11,6 @@ spec:
     server: 'https://kubernetes.default.svc'
   source:
     path: apps/01-all-in-one
-    repoURL: 'https://github.com/apnex/labops.git'
+    repoURL: 'https://github.com/apnex/labops'
     targetRevision: HEAD
   project: default
