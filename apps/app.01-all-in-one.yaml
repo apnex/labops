@@ -6,11 +6,13 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  destination:
-    namespace: planespotter
-    server: 'https://kubernetes.default.svc'
   source:
     path: apps/01-all-in-one
     repoURL: 'https://github.com/apnex/labops'
     targetRevision: HEAD
+  destination:
+    namespace: planespotter
+    server: 'https://kubernetes.default.svc'
+    syncOptions:
+    - CreateNamespace=true
   project: default
