@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVICENAME="proxy"
+SERVICENAME="kind-proxy"
 IMAGENAME="kind-proxy"
 
 printf "[apnex/${IMAGENAME}] stopping\n" 1>&2

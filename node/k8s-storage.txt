@@ -1,0 +1,97 @@
+## storage os operator
+kubectl create -f https://github.com/storageos/cluster-operator/releases/download/1.4.0/storageos-operator.yaml
+
+
+
+## K8S INSTALL [master]
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add
+apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+apt-cache policy kubelet
+apt-get install -y kubectl kubeadm kubelet
+
+## Kube Initialise [master]
+kubeadm init
+cd
+## kubectl setup - as a regular user "ubuntu"
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+### Calico Install
+https://docs.projectcalico.org/getting-started/kubernetes/quickstart
+
+#1 
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+
+#2 install Calico Operator
+kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+
+#3 install Calico
+kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+
+#4 remove taint from master
+kubectl taint nodes --all node-role.kubernetes.io/master-
+
+## NGINX Ingress Controller
+### NODEPORT?!?!?!
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.35.0/deploy/static/provider/baremetal/deploy.yaml
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.35.0/deploy/static/provider/baremetal/deploy.yaml
+
+### Type:LoadBalancer
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/cloud/deploy.yaml
+
+## MetalLB 
+https://blog.inkubate.io/install-and-configure-metallb-as-a-load-balancer-for-kubernetes/
+https://kubernetes.github.io/ingress-nginx/deploy/baremetal/
+
+## metallb installation
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
+# On first install only
+kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+
+### adjust to be a patch for nginx-ingress resource
+#### argo patch example
+kubectl patch app APPNAME  -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
+
+#### get ingress-nginx yaml
+kubectl -n ingress-nginx get services ingress-nginx-controller -o yaml
+kubectl -n ingress-nginx patch services ingress-nginx-controller -p '{"metadata": {"finalizers": ["resources-finalizer.argocd.argoproj.io"]}}' --type merge
+### patch-test.yaml ###
+spec:
+  externalIPs:
+  - 172.20.16.15
+### patch-test.yaml ###
+kubectl -n ingress-nginx patch services ingress-nginx-controller -p "$(cat patch-test.yaml)"
+### inline patch - change ingress IP
+kubectl -n ingress-nginx patch services ingress-nginx-controller -p '{"spec": {"externalIPs": ["172.20.16.14"]}}' --type merge
+
+## StorageOS
+https://docs.storageos.com/docs/install/kubernetes/#1-install-storageos-operator
+kubectl create -f https://github.com/storageos/cluster-operator/releases/download/v2.2.0/storageos-operator.yaml
+
+## install CHE IDE on kubernetes master
+curl -LO https://www.eclipse.org/che/chectl; chmod 755 chectl; ./chectl; chectl version
+chectl server:start --installer operator --platform k8s --domain=172.20.16.100.nip.io
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: task-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+
+#### hacking for hostPath storage to function
+#### pre-create pv and pvc for Che in Che namespace
+kubectl -n che patch pvc postgres-data -p '{"spec": {"storageClassName": "manual"}}' --type merge
+chmod -R 777 /mnt/data
+kub
