@@ -1,5 +1,3 @@
-argocd app set planespotter-all-in-one --sync-option CreateNamespace=true
-
 ### base OS prep
 ```
 yum install -y epel-release
