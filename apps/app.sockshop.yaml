@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sockshop-all-in-one
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: default
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: sock-shop/base
+    repoURL: 'https://github.com/argoproj/argocd-example-apps'
+    targetRevision: HEAD
+  project: default

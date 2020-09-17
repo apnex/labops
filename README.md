@@ -1,6 +1,5 @@
 ### base OS prep
 ```
-hostnamectl set-hostname web01
 yum install -y epel-release
 yum install -y openssl jq open-vm-tools
 ```
@@ -15,7 +14,6 @@ sed -i 's/^SELINUX=[a-z]*$/SELINUX=disabled/' /etc/selinux/config
 ```
 sed -i '/swap/d' /etc/fstab
 swapoff -a
-exec bash
 ```
 
 ---
@@ -64,10 +62,11 @@ git clone https://github.com/apnex/labops
 cd labops
 ```
 
-### start kind
+### start kind and kind-proxy
 ```
 cd kind
 ./kind.start.sh
+./proxy.start.sh
 cd ..
 ```
 
@@ -94,7 +93,7 @@ chmod +x /usr/local/bin/argocd
 argocd version --insecure
 ```
 
-### reset argocd password
+### update argocd admin password
 ```
-./argo.password.sh
+./argo.password.sh 'VMware1!SDDC'
 ```
