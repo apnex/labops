@@ -4,7 +4,8 @@
 # remove dangling image
 docker rm -v $(docker ps -qa -f name="kind-proxy" -f status=exited) 2>/dev/null
 
-docker run -d --net=host --cap-add=NET_ADMIN --cap-add=NET_RAW \
-	--name=kind-proxy \
+docker run -d --net host --cap-add NET_ADMIN --cap-add NET_RAW \
+	--name kind-proxy \
+	--restart unless-stopped \
 	-v /root/.kube/config:/root/.kube/config \
 apnex/kind-proxy
