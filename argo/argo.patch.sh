@@ -1,11 +1,20 @@
 #!/bin/bash
-kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+kubectl -n argocd delete services argocd-server
+kubectl -n argocd apply -f argo.vip.yaml
 
-## below doesnt yet work - need to fix
-#cat <<'EOF' | kubectl -n argocd patch svc argocd-server --type=json -p -
-#{
+#kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+#PATCH=$(jq -nc '{
 #	"spec": {
+#		"ports": [
+#			{
+#				"name": "https",
+#				"port": 8472,
+#				"protocol": "TCP",
+#				"targetPort": 8080
+#			}
+#		],
 #		"type": "LoadBalancer"
 #	}
-#}
-#EOF
+#}')
+#printf "${PATCH}" | jq --tab .
+#kubectl patch svc argocd-server -n argocd --type merge -p "${PATCH}"
