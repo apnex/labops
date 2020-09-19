@@ -1,10 +1,16 @@
 #!/bin/bash
 
 NEWPASS=$1
-
 read -r -d '' FILTER <<-'EOF'
-	.status.loadBalancer.ingress[0].ip as $IP
-	| $IP + ":" + (.spec.ports[0].port|tostring)
+	def extIP:
+		if (.spec.externalIPs[0]?) != 0 then
+			.spec.externalIPs[0]
+		else 
+			.status.loadBalancer.ingress[0].ip
+		end
+	;
+	extIP as $IP
+	| $IP + ":" + (.spec.ports[0].port | tostring)
 EOF
 export ARGOCD_SERVER=$(kubectl -n argocd get services vip-argocd-server -o json | jq -r "${FILTER}")
 if [[ -n $NEWPASS ]]; then
