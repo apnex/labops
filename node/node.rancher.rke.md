@@ -26,10 +26,18 @@ EOF
 sysctl --system
 ```
 
+### check.modules
+```
+for module in br_netfilter ip6_udp_tunnel ip_set ip_set_hash_ip ip_set_hash_net iptable_filter iptable_nat iptable_mangle iptable_raw nf_conntrack_netlink nf_conntrack nf_conntrack_ipv4   nf_defrag_ipv4 nf_nat nf_nat_ipv4 nf_nat_masquerade_ipv4 nfnetlink udp_tunnel veth vxlan x_tables xt_addrtype xt_conntrack xt_comment xt_mark xt_multiport xt_nat xt_recent xt_set xt_statistic xt_tcpudp;
+do
+	if [[ ! lsmod | grep -q $MODULE ]]; then
+		echo "module $MODULE is not present";
+	fi;
+done
+```
 ### reload br_filter
 ```
 echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
-modprobe -r br_netfilter
 modprobe br_netfilter
 lsmod | grep br_netfilter
 ```
@@ -45,12 +53,12 @@ yum-config-manager \
 
 ### install docker
 ```
+usermod -aG docker <user_name>
 yum install -y docker-ce docker-ce-cli containerd.io
 systemctl enable docker
 systemctl start docker
 ```
 
----
 ### install kubectl
 ```
 KUBERELEASE=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
@@ -59,33 +67,19 @@ chmod +x /usr/local/bin/kubectl
 kubectl version --client
 ```
 
-### install kind
-```
-curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
-chmod +x /usr/local/bin/kind
-kind version
-```
+#### v1.18.8-rancher1-1
+### install rke
+---
+curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.1.7/rke_linux-amd64
+chmod +x /usr/local/bin/rke
+rke --version
+---
 
 ### clone labops
 ```
 yum -y install git
 git clone https://github.com/apnex/labops
 cd labops
-```
-
-### start kind and kind-proxy
-```
-cd kind
-./kind.start.sh
-./proxy.start.sh
-cd ..
-```
-
-### install metallb
-```
-cd metallb
-./metallb.install.sh
-cd ..
 ```
 
 ---
