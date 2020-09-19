@@ -1,0 +1,13 @@
+nodes:
+  - address: localhost
+    user: rke
+    role:
+      - controlplane
+      - etcd
+      - worker
+ingress:
+  provider: none
+#monitoring:
+#  provider: none
+network:
+  plugin: calico

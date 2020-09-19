@@ -12,14 +12,13 @@ setup an install script to grab the eth0 IP and make a single IP pool
 metallb.universe.tf/allow-shared-ip
 
 ### RKE disable ingress/metrics server, select calico
-monitoring:
-    provider: none
-
-network:
-    plugin: calico
-
 ingress:
     provider: none
+monitoring:
+    provider: none
+network:
+    plugin: calico
+more
 
 
 ### auto provision metallB?

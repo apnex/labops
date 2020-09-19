@@ -35,7 +35,11 @@ read -r -d '' MODULELIST <<'EOF'
 ]
 EOF
 for MODULE in $(printf "${MODULELIST}" | jq -r '.[]'); do
-	if [[ ! lsmod | grep $MODULE ]]; then
-		echo "module $MODULE is not present";
+	if [[ $(lsmod | grep $MODULE) ]]; then
+		echo "module $MODULE is LOADED";
+	elif [[ $(cat /lib/modules/$(uname -r)/modules.builtin | grep ${MODULE}) ]]; then
+		echo "module $MODULE is BUILTIN";
+	else
+		echo "module $MODULE is MISSING";
 	fi;
 done

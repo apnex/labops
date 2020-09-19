@@ -16,16 +16,6 @@ sed -i '/swap/d' /etc/fstab
 swapoff -a
 ```
 
-### enable ip-forwarding
-```
-cat <<-EOF > /etc/sysctl.d/k8s.conf
-	net.bridge.bridge-nf-call-ip6tables = 1
-	net.bridge.bridge-nf-call-iptables = 1
-	net.ipv4.ip_forward = 1
-EOF
-sysctl --system
-```
-
 ### check.modules
 ```
 read -r -d '' MODULELIST <<'EOF'
@@ -64,8 +54,12 @@ read -r -d '' MODULELIST <<'EOF'
 ]
 EOF
 for MODULE in $(printf "${MODULELIST}" | jq -r '.[]'); do
-	if [[ ! lsmod | grep $MODULE ]]; then
-		echo "module $MODULE is not present";
+	if [[ $(lsmod | grep $MODULE) ]]; then
+		echo "module $MODULE is LOADED";
+	elif [[ $(cat /lib/modules/$(uname -r)/modules.builtin | grep ${MODULE}) ]]; then
+		echo "module $MODULE is BUILTIN";
+	else
+		echo "module $MODULE is MISSING";
 	fi;
 done
 ```
@@ -76,9 +70,16 @@ modprobe br_netfilter
 lsmod | grep br_netfilter
 ```
 
-### scan for builtins!!
-cat /lib/modules/$(uname -r)/modules.builtin | grep x_tables
-cat /lib/modules/$(uname -r)/modules.builtin | grep xt_tcpudp
+### enable ip-forwarding
+```
+cat <<-EOF > /etc/sysctl.d/k8s.conf
+	net.bridge.bridge-nf-call-ip6tables = 1
+	net.bridge.bridge-nf-call-iptables = 1
+	net.ipv4.ip_forward = 1
+EOF
+sysctl --system
+sysctl net.bridge.bridge-nf-call-iptables
+```
 
 ---
 ### setup docker repo
@@ -91,7 +92,6 @@ yum-config-manager \
 
 ### install docker
 ```
-usermod -aG docker <user_name>
 yum install -y docker-ce docker-ce-cli containerd.io
 systemctl enable docker
 systemctl start docker
@@ -107,11 +107,11 @@ kubectl version --client
 
 #### v1.18.8-rancher1-1
 ### install rke
----
+```
 curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.1.7/rke_linux-amd64
 chmod +x /usr/local/bin/rke
 rke --version
----
+```
 
 ### create rke.config file
 ```
@@ -134,11 +134,11 @@ touch $HOME/.ssh/authorized_keys
 chmod -R go= ~/.ssh
 ```
 
-### create and copy ssh keys
+### create and copy ssh keys to self
 ```
 ssh-keygen
-cat $HOME/.ssh/id_rsa.pub | ssh root@10.30.0.53 "sudo tee -a /home/rke/.ssh/authorized_keys"
-ssh -i $HOME/.ssh/id_rsa rke@10.30.0.53 docker version
+cat $HOME/.ssh/id_rsa.pub | ssh root@localhost "sudo tee -a /home/rke/.ssh/authorized_keys"
+ssh rke@localhost docker version
 ```
 
 ### start rke
@@ -154,8 +154,7 @@ mkdir -p $HOME/.kube
 ### copy kubeconfig
 ```
 mkdir -p $HOME/.kube
-mv kube_config_rke.config.yaml $HOME/.kube/config
-scp $HOME/.kube/config root@10.30.0.53:~/.kube/config
+scp kube_config_rke.cluster.config.yaml root@10.30.0.52:~/.kube/config
 ```
 
 ### clone labops
