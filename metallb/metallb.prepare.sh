@@ -1,5 +1,6 @@
 #!/bin/bash
 
+## determine IPADDRESS of default route interface
 ETH=$(route | grep ^default | sed "s/.* //")
 IPADDRESS=$(ip addr show "${ETH}" | grep inet | awk '{print $2}' | cut -d/ -f1)
 

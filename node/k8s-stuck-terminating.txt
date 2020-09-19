@@ -21,3 +21,9 @@ kubectl delete app APPNAME
 kubectl get namespace argocd -o json > argocd.json
 ### remove the finalizer!
 kubectl replace --raw "/api/v1/namespaces/logging/argocd" -f ./argocd.json
+
+## script
+docker.nsx.sh
+curl -fsSL https://raw.githubusercontent.com/apnex/labops/master/centos/docker.install.sh | sh
+
+
