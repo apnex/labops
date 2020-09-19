@@ -68,6 +68,9 @@ kubectl -n ingress-nginx patch services ingress-nginx-controller -p "$(cat patch
 ### inline patch - change ingress IP
 kubectl -n ingress-nginx patch services ingress-nginx-controller -p '{"spec": {"externalIPs": ["172.20.16.14"]}}' --type merge
 
+
+kubectl -n vip-planespotter-frontend patch services vip-planespotter-frontend -p '{"spec": {"externalIPs": ["10.30.0.53"]}}'
+
 ## StorageOS
 https://docs.storageos.com/docs/install/kubernetes/#1-install-storageos-operator
 kubectl create -f https://github.com/storageos/cluster-operator/releases/download/v2.2.0/storageos-operator.yaml

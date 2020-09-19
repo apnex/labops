@@ -35,6 +35,8 @@ metadata:
   name: vip-planespotter-frontend
   labels:
     app: planespotter-frontend
+  annotations:
+    metallb.universe.tf/allow-shared-ip: host
 spec:
   selector:
     app: planespotter-frontend

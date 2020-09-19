@@ -5,12 +5,13 @@ metadata:
   name: mysql
   labels:
     app: mysql
+  annotations:
+    metallb.universe.tf/allow-shared-ip: host
 spec:
   ports:
   - port: 3306
     name: mysql
   type: LoadBalancer
-  #clusterIP: None
   selector:
     app: mysql
 ---
