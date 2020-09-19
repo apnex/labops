@@ -16,61 +16,12 @@ sed -i '/swap/d' /etc/fstab
 swapoff -a
 ```
 
-### check.modules
+### load modules
 ```
-read -r -d '' MODULELIST <<'EOF'
-[
-	"br_netfilter",
-	"ip6_udp_tunnel",
-	"ip_set",
-	"ip_set_hash_ip",
-	"ip_set_hash_net",
-	"iptable_filter",
-	"iptable_nat",
-	"iptable_mangle",
-	"iptable_raw",
-	"nf_conntrack_netlink",
-	"nf_conntrack",
-	"nf_conntrack_ipv4",
-	"nf_defrag_ipv4",
-	"nf_nat",
-	"nf_nat_ipv4",
-	"nf_nat_masquerade_ipv4",
-	"nfnetlink",
-	"udp_tunnel",
-	"veth",
-	"vxlan",
-	"x_tables",
-	"xt_addrtype",
-	"xt_conntrack",
-	"xt_comment",
-	"xt_mark",
-	"xt_multiport",
-	"xt_nat",
-	"xt_recent",
-	"xt_set",
-	"xt_statistic",
-	"xt_tcpudp"
-]
-EOF
-for MODULE in $(printf "${MODULELIST}" | jq -r '.[]'); do
-	if [[ $(lsmod | grep $MODULE) ]]; then
-		echo "module $MODULE is LOADED";
-	elif [[ $(cat /lib/modules/$(uname -r)/modules.builtin | grep ${MODULE}) ]]; then
-		echo "module $MODULE is BUILTIN";
-	else
-		echo "module $MODULE is MISSING";
-	fi;
-done
-```
-### reload br_filter
-```
-echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
-modprobe br_netfilter
-lsmod | grep br_netfilter
+./load.modules.sh
 ```
 
-### enable ip-forwarding
+### enable ip-forward / nf-call-iptables
 ```
 cat <<-EOF > /etc/sysctl.d/k8s.conf
 	net.bridge.bridge-nf-call-ip6tables = 1
@@ -105,10 +56,11 @@ chmod +x /usr/local/bin/kubectl
 kubectl version --client
 ```
 
-#### v1.18.8-rancher1-1
+curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.2.0-rc10/rke_linux-amd64
+
 ### install rke
 ```
-curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.1.7/rke_linux-amd64
+curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/latest/download/rke_linux-amd64
 chmod +x /usr/local/bin/rke
 rke --version
 ```
@@ -116,11 +68,11 @@ rke --version
 ### docker user
 ```
 useradd -m -g docker rke
-su rke
-mkdir $HOME/.ssh
-chmod 700 $HOME/.ssh
-touch $HOME/.ssh/authorized_keys
-chmod -R go= ~/.ssh
+mkdir -p rke/.ssh
+chmod 700 rke/.ssh
+touch rke/.ssh/authorized_keys
+chmod -R go= rke/.ssh
+chown -R rke:docker /home/rke
 ```
 
 ### create and copy ssh keys to self
@@ -130,22 +82,6 @@ cat $HOME/.ssh/id_rsa.pub | ssh root@localhost "sudo tee -a /home/rke/.ssh/autho
 ssh rke@localhost docker version
 ```
 
-### start rke
-```
-rke up --config ./rke.config.yaml
-```
-
-### setup .kube directory
-```
-mkdir -p $HOME/.kube
-```
-
-### copy kubeconfig
-```
-mkdir -p $HOME/.kube
-scp kube_config_rke.cluster.config.yaml root@10.30.0.52:~/.kube/config
-```
-
 ### clone labops
 ```
 yum -y install git
@@ -153,9 +89,22 @@ git clone https://github.com/apnex/labops
 cd labops
 ```
 
-### install local-path-provisioner
+### start rke
+```
+rke up --config ./rke.config.yaml
 ```
 
+### copy kubeconfig
+```
+mkdir -p $HOME/.kube
+cp kube_config_rke.config.yaml ~/.kube/config
+```
+
+### install local-path-provisioner
+```
+cd storage
+./storage.install.sh
+cd ..
 ```
 
 ---

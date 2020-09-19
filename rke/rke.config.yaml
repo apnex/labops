@@ -7,7 +7,7 @@ nodes:
       - worker
 ingress:
   provider: none
-#monitoring:
-#  provider: none
+monitoring:
+  provider: none
 network:
   plugin: calico
