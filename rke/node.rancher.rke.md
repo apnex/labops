@@ -113,17 +113,6 @@ chmod +x /usr/local/bin/rke
 rke --version
 ```
 
-### create rke.config file
-```
-nodes:
-    - address: 1.2.3.4
-      user: ubuntu
-      role:
-        - controlplane
-        - etcd
-        - worker
-```
-
 ### docker user
 ```
 useradd -m -g docker rke
@@ -164,24 +153,22 @@ git clone https://github.com/apnex/labops
 cd labops
 ```
 
+### install local-path-provisioner
+```
+
+```
+
 ---
 ### install argocd
 ```
 cd argo
 ./argo.install.sh
-./argo.patch.sh
+./argo.service.sh
 ```
 
 ### install argocd cli
 ```
-read -r -d '' FILTER <<-'EOF'
-	.status.loadBalancer.ingress[0].ip as $IP
-	| $IP + ":" + (.spec.ports[0].port|tostring)
-EOF
-export ARGOCD_SERVER=$(kubectl -n argocd get services vip-argocd-server -o json | jq -r "${FILTER}")
-curl -kLo /usr/local/bin/argocd https://${ARGOCD_SERVER}/download/argocd-linux-amd64
-chmod +x /usr/local/bin/argocd
-argocd version --insecure
+./argo.cli.install.sh
 ```
 
 ### update argocd admin password

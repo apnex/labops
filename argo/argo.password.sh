@@ -3,9 +3,9 @@
 NEWPASS=$1
 read -r -d '' FILTER <<-'EOF'
 	def extIP:
-		if (.spec.externalIPs[0]?) != 0 then
+		if (.spec.externalIPs | length) != 0 then
 			.spec.externalIPs[0]
-		else 
+		else
 			.status.loadBalancer.ingress[0].ip
 		end
 	;
