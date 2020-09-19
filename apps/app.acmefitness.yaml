@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: acmefitness-all-in-one
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    path: apps/acmefitness
+    repoURL: 'https://github.com/apnex/labops'
+    targetRevision: HEAD
+  destination:
+    namespace: acmefitness
+    server: 'https://kubernetes.default.svc'
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
