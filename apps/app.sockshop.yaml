@@ -8,11 +8,11 @@ metadata:
 spec:
   project: default
   source:
-    path: sock-shop/base
-    repoURL: 'https://github.com/argoproj/argocd-example-apps'
+    path: apps/sockshop
+    repoURL: 'https://github.com/apnex/labops'
     targetRevision: HEAD
   destination:
-    namespace: default
+    namespace: sockshop
     server: 'https://kubernetes.default.svc'
   syncPolicy:
     syncOptions:
