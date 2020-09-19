@@ -5,3 +5,22 @@ metadata:
 provisioner: rancher.io/local-path
 reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer
+
+
+### metallb config!!
+setup an install script to grab the eth0 IP and make a single IP pool
+metallb.universe.tf/allow-shared-ip
+
+### RKE disable ingress/metrics server, select calico
+monitoring:
+    provider: none
+
+network:
+    plugin: calico
+
+ingress:
+    provider: none
+
+
+### auto provision metallB?
+    - https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/rook-operator.yaml
