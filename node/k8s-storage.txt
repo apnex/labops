@@ -64,6 +64,7 @@ spec:
   - 172.20.16.15
 ### patch-test.yaml ###
 kubectl -n ingress-nginx patch services ingress-nginx-controller -p "$(cat patch-test.yaml)"
+
 ### inline patch - change ingress IP
 kubectl -n ingress-nginx patch services ingress-nginx-controller -p '{"spec": {"externalIPs": ["172.20.16.14"]}}' --type merge
 
@@ -72,7 +73,9 @@ https://docs.storageos.com/docs/install/kubernetes/#1-install-storageos-operator
 kubectl create -f https://github.com/storageos/cluster-operator/releases/download/v2.2.0/storageos-operator.yaml
 
 ## install CHE IDE on kubernetes master
-curl -LO https://www.eclipse.org/che/chectl; chmod 755 chectl; ./chectl; chectl version
+curl -Lo /usr/local/bin/chectl https://www.eclipse.org/che/chectl
+chmod +x /usr/local/bin/chectl
+chectl version
 chectl server:start --installer operator --platform k8s --domain=172.20.16.100.nip.io
 
 apiVersion: v1

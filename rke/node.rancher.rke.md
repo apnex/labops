@@ -30,7 +30,7 @@ sysctl --system
 ```
 for module in br_netfilter ip6_udp_tunnel ip_set ip_set_hash_ip ip_set_hash_net iptable_filter iptable_nat iptable_mangle iptable_raw nf_conntrack_netlink nf_conntrack nf_conntrack_ipv4   nf_defrag_ipv4 nf_nat nf_nat_ipv4 nf_nat_masquerade_ipv4 nfnetlink udp_tunnel veth vxlan x_tables xt_addrtype xt_conntrack xt_comment xt_mark xt_multiport xt_nat xt_recent xt_set xt_statistic xt_tcpudp;
 do
-	if [[ ! lsmod | grep -q $MODULE ]]; then
+	if [[ ! lsmod | grep $MODULE ]]; then
 		echo "module $MODULE is not present";
 	fi;
 done
@@ -41,6 +41,10 @@ echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
 modprobe br_netfilter
 lsmod | grep br_netfilter
 ```
+
+### scan for builtins!!
+cat /lib/modules/$(uname -r)/modules.builtin | grep x_tables
+cat /lib/modules/$(uname -r)/modules.builtin | grep xt_tcpudp
 
 ---
 ### setup docker repo
@@ -74,6 +78,51 @@ curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.
 chmod +x /usr/local/bin/rke
 rke --version
 ---
+
+### create rke.config file
+```
+nodes:
+    - address: 1.2.3.4
+      user: ubuntu
+      role:
+        - controlplane
+        - etcd
+        - worker
+```
+
+### docker user
+```
+useradd -m -g docker rke
+su rke
+mkdir $HOME/.ssh
+chmod 700 $HOME/.ssh
+touch $HOME/.ssh/authorized_keys
+chmod -R go= ~/.ssh
+```
+
+### create and copy ssh keys
+```
+ssh-keygen
+cat $HOME/.ssh/id_rsa.pub | ssh root@10.30.0.53 "sudo tee -a /home/rke/.ssh/authorized_keys"
+ssh -i $HOME/.ssh/id_rsa rke@10.30.0.53 docker version
+```
+
+### start rke
+```
+rke up --config ./rke.config.yaml
+```
+
+### setup .kube directory
+```
+mkdir -p $HOME/.kube
+```
+
+### copy kubeconfig
+```
+mkdir -p $HOME/.kube
+mv kube_config_rke.config.yaml $HOME/.kube/config
+scp $HOME/.kube/config root@10.30.0.53:~/.kube/config
+```
 
 ### clone labops
 ```
