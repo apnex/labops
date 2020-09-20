@@ -1,3 +1,13 @@
+### start with a minimal CentOS 7 VM
+CPU: 4 vCPU
+MEM: 4 GB
+DISK: 32 GB
+
+### install docker
+```
+curl -fsSL https://raw.githubusercontent.com/apnex/labops/master/centos/docker.install.sh | sh
+```
+
 ### clone labops
 ```
 yum -y install git

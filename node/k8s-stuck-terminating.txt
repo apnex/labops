@@ -26,7 +26,7 @@ kubectl replace --raw "/api/v1/namespaces/argocd/argocd" -f ./argocd.json
 curl -fsSL https://docker.labops.sh | sh
 curl -fsSL https://raw.githubusercontent.com/apnex/labops/master/centos/docker.install.sh | sh
 
-kubectl -n get podsget deployment my-deployment -o json \
+kubectl -n argocd get podsget deployment my-deployment -o json \
     | jq '.spec.template.spec.containers[0].env[1].value = "new value"' \
     | kubectl replace -f -
 
@@ -56,3 +56,5 @@ spec:
     defaultRequest:
       cpu: 100m
     type: Container
+
+

@@ -1,69 +1,11 @@
-### base OS prep
-```
-yum install -y epel-release
-yum install -y openssl jq open-vm-tools
-```
-
-### disable selinux
-```
-setenforce 0
-sed -i 's/^SELINUX=[a-z]*$/SELINUX=disabled/' /etc/selinux/config
-```
-
-### disable swap
-```
-sed -i '/swap/d' /etc/fstab
-swapoff -a
-```
-
-### enable ip-forwarding
-```
-cat <<-EOF > /etc/sysctl.d/k8s.conf
-	net.bridge.bridge-nf-call-ip6tables = 1
-	net.bridge.bridge-nf-call-iptables = 1
-	net.ipv4.ip_forward = 1
-EOF
-sysctl --system
-```
-
-### reload br_filter
-```
-echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
-modprobe -r br_netfilter
-modprobe br_netfilter
-lsmod | grep br_netfilter
-```
-
----
-### setup docker repo
-```
-yum install -y yum-utils
-yum-config-manager \
-	--add-repo \
-	https://download.docker.com/linux/centos/docker-ce.repo
-```
+### start with a minimal CentOS 7 VM
+CPU: 4 vCPU
+MEM: 4 GB
+DISK: 32 GB
 
 ### install docker
 ```
-yum install -y docker-ce docker-ce-cli containerd.io
-systemctl enable docker
-systemctl start docker
-```
-
----
-### install kubectl
-```
-KUBERELEASE=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-curl -Lo /usr/local/bin/kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERELEASE}/bin/linux/amd64/kubectl"
-chmod +x /usr/local/bin/kubectl
-kubectl version --client
-```
-
-### install kind
-```
-curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-linux-amd64
-chmod +x /usr/local/bin/kind
-kind version
+curl -fsSL https://raw.githubusercontent.com/apnex/labops/master/centos/docker.install.sh | sh
 ```
 
 ### clone labops
@@ -73,42 +15,51 @@ git clone https://github.com/apnex/labops
 cd labops
 ```
 
-### start kind and kind-proxy
+### docker user
 ```
-cd kind
-./kind.start.sh
-./proxy.start.sh
-cd ..
-```
-
-### install metallb
-```
-cd metallb
-./metallb.install.sh
-cd ..
+useradd -m -g docker rke
+mkdir -p /home/rke/.ssh
+chmod 700 /home/rke/.ssh
+chmod -R go= /home/rke/.ssh
 ```
 
----
-### install argocd
+### create and copy ssh keys to rke user
 ```
-cd argo
-./argo.install.sh
-./argo.patch.sh
-```
-
-### install argocd cli
-```
-read -r -d '' FILTER <<-'EOF'
-	.status.loadBalancer.ingress[0].ip as $IP
-	| $IP + ":" + (.spec.ports[0].port|tostring)
-EOF
-export ARGOCD_SERVER=$(kubectl -n argocd get services vip-argocd-server -o json | jq -r "${FILTER}")
-curl -kLo /usr/local/bin/argocd https://${ARGOCD_SERVER}/download/argocd-linux-amd64
-chmod +x /usr/local/bin/argocd
-argocd version --insecure
+cat /dev/zero | ssh-keygen -q -N "" >/dev/null
+cp ~/.ssh/id_rsa.pub /home/rke/.ssh/authorized_keys
+chown -R rke:docker /home/rke
+ssh rke@localhost docker version
 ```
 
-### update argocd admin password
+### install rke
 ```
-./argo.password.sh 'VMware1!SDDC'
+curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.2.0-rc10/rke_linux-amd64
+chmod +x /usr/local/bin/rke
+rke --version
+```
+
+### install kubectl
+```
+KUBERELEASE=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+curl -Lo /usr/local/bin/kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERELEASE}/bin/linux/amd64/kubectl"
+chmod +x /usr/local/bin/kubectl
+kubectl version --client
+```
+
+### start rke
+```
+cd rke
+rke up --config ./rke.config.yaml
+```
+
+### copy kubeconfig
+```
+mkdir -p $HOME/.kube
+cp kube_config_rke.config.yaml ~/.kube/config
+```
+
+### check cluster
+```
+kubectl get nodes
+kubectl get pods -A
 ```
