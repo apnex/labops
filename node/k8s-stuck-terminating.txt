@@ -23,7 +23,7 @@ kubectl get namespace argocd -o json > argocd.json
 kubectl replace --raw "/api/v1/namespaces/argocd/argocd" -f ./argocd.json
 
 ## script
-docker.nsx.sh
+curl -fsSL https://docker.labops.sh | sh
 curl -fsSL https://raw.githubusercontent.com/apnex/labops/master/centos/docker.install.sh | sh
 
 kubectl -n get podsget deployment my-deployment -o json \

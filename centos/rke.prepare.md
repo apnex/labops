@@ -27,6 +27,7 @@ cd argo
 ```
 
 ### update argocd admin password
+Adjust to be a full password reset via configmap
 ```
 ./argo.password.sh 'VMware1!SDDC'
 ```

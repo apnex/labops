@@ -38,6 +38,7 @@ kubectl version --client
 
 ### start rke
 ```
+cd rke
 rke up --config ./rke.config.yaml
 ```
 

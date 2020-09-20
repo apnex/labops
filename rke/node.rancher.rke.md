@@ -77,8 +77,8 @@ chown -R rke:docker /home/rke
 
 ### create and copy ssh keys to self
 ```
-ssh-keygen
-cat $HOME/.ssh/id_rsa.pub | ssh root@localhost "sudo tee -a /home/rke/.ssh/authorized_keys"
+cat /dev/zero | ssh-keygen -q -N "" >/dev/null
+cat ~/.ssh/id_rsa.pub | ssh root@localhost "sudo tee -a /home/rke/.ssh/authorized_keys"
 ssh rke@localhost docker version
 ```
 
