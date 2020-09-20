@@ -1,7 +1,7 @@
 #!/bin/bash
 
 NAMESPACE=${1}
-read -r -d '' FILTER <<-'EOF'
+read -r -d '' EXTRACT <<-'EOF'
 	.
 	| del(.metadata.managedFields)
 	| del(.metadata.annotations."kubectl.kubernetes.io/last-applied-configuration")
@@ -28,7 +28,7 @@ EOF
 DEPLOYMENTS=$(kubectl -n "${NAMESPACE}" get deployments -o json)
 IFS=$'\n'
 for DEPA in $(echo "${DEPLOYMENTS}" | jq -c '.items[]'); do
-	echo "${DEPA}" | jq --tab "${FILTER}"
+	NAME=$(echo "${DEPA}" | jq -r '.metadata.name')
+	mkdir -p "./output/${NAMESPACE}"
+	echo "${DEPA}" | jq --tab "${EXTRACT}" >"./output/${NAMESPACE}/${NAME}.yaml"
 done
-
-#kubectl -n sockshop get deployments orders -o json | jq --tab "${FILTER}"

@@ -31,3 +31,5 @@ Adjust to be a full password reset via configmap
 ```
 ./argo.password.sh 'VMware1!SDDC'
 ```
+
+kubectl -n kube-system get deployments -o json
