@@ -20,10 +20,37 @@ kubectl delete app APPNAME
 
 kubectl get namespace argocd -o json > argocd.json
 ### remove the finalizer!
-kubectl replace --raw "/api/v1/namespaces/logging/argocd" -f ./argocd.json
+kubectl replace --raw "/api/v1/namespaces/argocd/argocd" -f ./argocd.json
 
 ## script
 docker.nsx.sh
 curl -fsSL https://raw.githubusercontent.com/apnex/labops/master/centos/docker.install.sh | sh
 
+kubectl -n get podsget deployment my-deployment -o json \
+    | jq '.spec.template.spec.containers[0].env[1].value = "new value"' \
+    | kubectl replace -f -
 
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: mem-limit-range
+spec:
+  limits:
+  - default:
+      memory: 256Mi
+    defaultRequest:
+      memory: 128Mi
+    type: Container
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cpu-limit-range
+spec:
+  limits:
+  - default:
+      cpu: 300m
+    defaultRequest:
+      cpu: 100m
+    type: Container
