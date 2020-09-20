@@ -34,12 +34,14 @@ kubectl -n get podsget deployment my-deployment -o json \
 apiVersion: v1
 kind: LimitRange
 metadata:
-  name: mem-limit-range
+  name: all-limit-range
 spec:
   limits:
   - default:
+      cpu: 300m
       memory: 256Mi
     defaultRequest:
+      cpu: 100m
       memory: 128Mi
     type: Container
 ---
