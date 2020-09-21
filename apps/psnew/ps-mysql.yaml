@@ -130,7 +130,7 @@ data:
     skip-name-resolve
     local_infile       = 1 # enable local file loading
     #performance_schema = 0  # reduce memory footprint
-    default_authentication_plugin=mysql_native_password
+    #default_authentication_plugin=mysql_native_password
     ### mysql memory tuning references
     # https://tech.labelleassiette.com/how-to-reduce-the-memory-usage-of-mysql-61ea7d1a9bd
     # https://www.percona.com/blog/2019/08/14/mysql-8-and-mysql-5-7-memory-consumption-on-small-devices/
