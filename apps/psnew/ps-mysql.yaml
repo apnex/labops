@@ -33,7 +33,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: mysql
-        image: mysql:5.6
+        image: mysql:8.0.21   ## old: 5.6
         env:
           # Use secret in real usage
         - name: MYSQL_ROOT_PASSWORD
