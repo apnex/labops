@@ -136,7 +136,6 @@ data:
     # https://www.percona.com/blog/2019/08/14/mysql-8-and-mysql-5-7-memory-consumption-on-small-devices/
     # https://lefred.be/content/mysql-8-0-memory-consumption-on-small-devices/
     key_buffer_size = 8M
-    query_cache_size = 8M
     innodb_buffer_pool_size = 64M
     innodb_log_buffer_size = 8M
     thread_stack = 128K
