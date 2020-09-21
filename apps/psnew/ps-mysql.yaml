@@ -125,7 +125,7 @@ data:
     key_buffer_size=8M 
     max_connections=30 # Limit connections
     thread_stack=128K
-    [mysql]
+    [client]
     local_infile=ON
 ---
 apiVersion: v1
