@@ -38,7 +38,7 @@ local_infile=1
 local_infile=1
 
 ## show global setting
-show global variables like 'local_infile';
+show global variables like 'performance_schema';
 
 ### update cli
 mysql --local_infile=1 -u root -ppassword
@@ -52,3 +52,7 @@ INTO TABLE MASTER
 FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS;
+
+
+### tail the DB logs
+kubectl -n psnew logs --follow mysql-0
