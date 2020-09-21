@@ -41,7 +41,7 @@ local_infile=1
 show global variables like 'performance_schema';
 
 ### update cli
-mysql --local_infile=1 -u root -ppassword
+mysql -u root -ppassword
 
 ## .sql file
 mysql --local_infile=1 --user=root --password=$MYSQL_ROOT_PASSWORD < create-planespotter-db.sql
@@ -53,6 +53,11 @@ FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS;
 
-
 ### tail the DB logs
 kubectl -n psnew logs --follow mysql-0
+
+
+        - name: mysql-config-file
+          mountPath: /etc/mysql/my.cnf
+          subPath: my.cnf
+
