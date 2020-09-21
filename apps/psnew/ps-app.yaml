@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: planespotter
-        image: yfauser/planespotter-app-server:1508888202fc85246248c0892c0d27dda34de8e1
+        image: apnex/planespotter-app-server # yfauser/planespotter-app-server:1508888202fc85246248c0892c0d27dda34de8e1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
@@ -36,7 +36,7 @@ metadata:
   name: planespotter-app-cfg
 data:
   config.cfg: |
-    DATABASE_URL = 'mysql' ## can set to fqdn/IP
+    DATABASE_URL = 'mysql' # can set to fqdn/IP
     DATABASE_USER = 'planespotter'
     DATABASE_PWD = 'VMware1!'
     DATABASE = 'planespotter'
