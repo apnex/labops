@@ -2,18 +2,30 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: planespotter-svc
+  name: vip-planespotter-svc
   labels:
-    app: planespotter-svc
+    app: vip-planespotter-svc
   annotations:
     metallb.universe.tf/allow-shared-ip: host
 spec:
   selector:
     app: planespotter-app
   ports:
-    - port: 80
-      targetPort: 81
+    - port: 81
+      targetPort: 80
   type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: planespotter-svc
+  labels:
+    app: planespotter-svc
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: planespotter-app
 ---
 apiVersion: apps/v1
 kind: Deployment
