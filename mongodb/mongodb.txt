@@ -1,0 +1,53 @@
+mongodb
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: k8-training
+type: Opaque
+data:
+  MONGO_ROOT_USERNAME: YWRtaW4K
+  MONGO_ROOT_PASSWORD: cGFzc3dvcmQK
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb-standalone
+spec:
+  serviceName: database
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+        selector: mongodb-standalone
+    spec:
+      containers:
+      - name: mongodb-standalone
+        image: mongo:4.0.8
+        env:
+          - name: MONGO_INITDB_ROOT_USERNAME_FILE
+            value: /etc/k8-training/admin/MONGO_ROOT_USERNAME
+          - name: MONGO_INITDB_ROOT_PASSWORD_FILE
+            value: /etc/k8-training/admin/MONGO_ROOT_PASSWORD
+        volumeMounts:
+        - name: k8-training
+          mountPath: /etc/k8-training
+          readOnly: true
+      nodeSelector:
+        kubernetes.io/hostname: mongodb-node
+      volumes:
+      - name: k8-training
+        secret:
+          secretName: k8-training
+          items:
+          - key: MONGO_ROOT_USERNAME
+            path: admin/MONGO_ROOT_USERNAME
+            mode: 0444
+          - key: MONGO_ROOT_PASSWORD
+            path: admin/MONGO_ROOT_PASSWORD
+            mode: 0444
