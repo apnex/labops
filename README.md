@@ -18,7 +18,7 @@ git clone https://github.com/apnex/labops
 cd labops
 ```
 
-### docker user
+### create rke docker user
 ```
 useradd -m -g docker rke
 mkdir -p /home/rke/.ssh
@@ -31,7 +31,7 @@ chmod -R go= /home/rke/.ssh
 cat /dev/zero | ssh-keygen -q -N "" >/dev/null
 cp ~/.ssh/id_rsa.pub /home/rke/.ssh/authorized_keys
 chown -R rke:docker /home/rke
-ssh rke@localhost docker version
+ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" rke@localhost docker version
 ```
 
 ### install rke
