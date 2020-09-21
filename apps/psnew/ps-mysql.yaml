@@ -49,7 +49,7 @@ spec:
           subPath: planespotter-install.sh
         - name: mysql-config-file
           mountPath: /etc/mysql/conf.d/docker.cnf
-          subPath: master.cnf
+          subPath: docker.cnf
         - name: mysql-start
           mountPath: /bin/mysql-start.sh
           subPath: mysql-start.sh
