@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: vip-planespotter-svc
+  name: planespotter-svc
   labels:
-    app: vip-planespotter-svc
+    app: planespotter-svc
   annotations:
     metallb.universe.tf/allow-shared-ip: host
 spec:
