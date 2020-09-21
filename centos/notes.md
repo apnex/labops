@@ -25,13 +25,13 @@ delete ns
 
 ## metrics server
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.6/components.yaml
+https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-[ "--kubelet-insecure-tls" ]
-            "spec": {
-                "containers": [
-                    {
-                        "args": [
-                            "--cert-dir=/tmp",
-                            "--secure-port=4443"
-                        ],
+Examples
+- Tier
 
+Energy Queensland
+
+One apps
+
+-- Query
