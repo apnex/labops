@@ -48,8 +48,8 @@ spec:
           mountPath: /bin/planespotter-install.sh
           subPath: planespotter-install.sh
         - name: mysql-config-file
-          mountPath: /etc/mysql/conf.d/docker.cnf
-          subPath: docker.cnf
+          mountPath: /etc/mysql/my.cnf
+          subPath: my.cnf
         - name: mysql-start
           mountPath: /bin/mysql-start.sh
           subPath: mysql-start.sh
@@ -117,8 +117,12 @@ kind: ConfigMap
 metadata:
   name: mysql-config-file
 data:
-  docker.cnf: |
+  my.cnf: |
     [mysqld]
+    pid-file        = /var/run/mysqld/mysqld.pid
+    socket          = /var/run/mysqld/mysqld.sock
+    datadir         = /var/lib/mysql
+    secure-file-priv= NULL
     skip-host-cache
     skip-name-resolve
     local_infile=ON
