@@ -117,7 +117,7 @@ kind: ConfigMap
 metadata:
   name: mysql-config-file
 data:
-  base.cnf: |
+  docker.cnf: |
     [mysqld]
     skip-host-cache
     skip-name-resolve
