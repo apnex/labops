@@ -1,8 +1,11 @@
 ### start with a minimal CentOS 7 VM
-CPU: 4 vCPU
-MEM: 4 GB
-DISK: 32 GB
+CPU: 4 vCPU  
+MEM: 4 GB  
+DISK: 32 GB  
 
+[https://github.com/apnex/pxe](https://github.com/apnex/pxe)
+
+---
 ### install docker
 ```
 curl -fsSL https://raw.githubusercontent.com/apnex/labops/master/centos/docker.install.sh | sh

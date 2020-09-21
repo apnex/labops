@@ -23,4 +23,15 @@ delete ns
 -- kubectl
 -- argocd
 
+## metrics server
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.6/components.yaml
+
+[ "--kubelet-insecure-tls" ]
+            "spec": {
+                "containers": [
+                    {
+                        "args": [
+                            "--cert-dir=/tmp",
+                            "--secure-port=4443"
+                        ],
 
