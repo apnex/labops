@@ -48,7 +48,7 @@ spec:
           mountPath: /bin/planespotter-install.sh
           subPath: planespotter-install.sh
         - name: mysql-config-file
-          mountPath: /etc/mysql/conf.d/master.cnf
+          mountPath: /etc/mysql/conf.d/docker.cnf
           subPath: master.cnf
         - name: mysql-start
           mountPath: /bin/mysql-start.sh
@@ -117,9 +117,10 @@ kind: ConfigMap
 metadata:
   name: mysql-config-file
 data:
-  master.cnf: |
-    # Apply this config only on the master.
+  docker.cnf: |
     [mysqld]
+    skip-host-cache
+    skip-name-resolve
     local_infile=ON
     performance_schema=0
     key_buffer_size=8M 
