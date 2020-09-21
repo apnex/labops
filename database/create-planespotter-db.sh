@@ -1,8 +1,9 @@
 #!/bin/bash
 
 cd ~/planespotter/db-install/
-wget http://registry.faa.gov/database/ReleasableAircraft.zip
+curl -Lo ReleasableAircraft.zip http://registry.faa.gov/database/ReleasableAircraft.zip
+#wget http://registry.faa.gov/database/ReleasableAircraft.zip
 unzip ReleasableAircraft.zip
 rm ReleasableAircraft.zip DEALER.txt DEREG.txt DOCINDEX.txt ENGINE.txt RESERVED.txt
-mysql --local_infile=1 --user=root --password=$MYSQL_ROOT_PASSWORD < create-planespotter-db.sql
+mysql --local_infile=1 --user=root --password=${MYSQL_ROOT_PASSWORD} < create-planespotter-db.sql
 rm MASTER.txt ACFTREF.txt
