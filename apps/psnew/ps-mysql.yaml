@@ -48,8 +48,8 @@ spec:
           mountPath: /bin/planespotter-install.sh
           subPath: planespotter-install.sh
         - name: mysql-config-file
-          mountPath: /etc/mysql/my.cnf
-          subPath: my.cnf
+          mountPath: /etc/mysql/conf.d/custom.cnf
+          subPath: custom.cnf
         - name: mysql-start
           mountPath: /bin/mysql-start.sh
           subPath: mysql-start.sh
