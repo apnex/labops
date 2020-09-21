@@ -104,13 +104,12 @@ data:
       apt-get update
       echo "apt-get installing curl..."
       apt-get --assume-yes install curl
-      #apt-get --assume-yes install wget
-      apt-get --assume-yes install unzip
+      # apt-get --assume-yes install unzip # not needed for fake database
       echo "downloading planespotter scripts..."
       mkdir ~/planespotter
       mkdir ~/planespotter/db-install
       cd ~/planespotter/db-install
-      curl -L -o create-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/create-planespotter-db.sh
+      curl -L -o create-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/fake-planespotter-db.sh # fake database
       curl -L -o create-planespotter-db.sql https://raw.githubusercontent.com/apnex/labops/master/database/create-planespotter-db.sql
       curl -L -o delete-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/delete-planespotter-db.sh
       curl -L -o delete-planespotter-db.sql https://raw.githubusercontent.com/apnex/labops/master/database/delete-planespotter-db.sql
