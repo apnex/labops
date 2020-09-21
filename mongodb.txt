@@ -53,6 +53,8 @@ FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS;
 
+/bin/mysql-memtest.sh
+
 ### tail the DB logs
 kubectl -n psnew logs --follow mysql-0
 
@@ -61,3 +63,13 @@ kubectl -n psnew logs --follow mysql-0
           mountPath: /etc/mysql/my.cnf
           subPath: my.cnf
 
+### mysql memory tuning references
+# https://tech.labelleassiette.com/how-to-reduce-the-memory-usage-of-mysql-61ea7d1a9bd
+# https://www.percona.com/blog/2019/08/14/mysql-8-and-mysql-5-7-memory-consumption-on-small-devices/
+# https://lefred.be/content/mysql-8-0-memory-consumption-on-small-devices/
+key_buffer_size = 8M
+query_cache_size = 8M
+innodb_buffer_pool_size = 64M
+innodb_log_buffer_size = 8M
+tmp_table = 8M
+max_connections = 25
