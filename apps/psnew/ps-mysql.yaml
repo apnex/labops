@@ -103,10 +103,10 @@ data:
       mkdir ~/planespotter
       mkdir ~/planespotter/db-install
       cd ~/planespotter/db-install
-      curl -L -o create-planespotter-db.sh https://github.com/yfauser/planespotter/raw/master/db-install/create-planespotter-db.sh
-      curl -L -o create-planespotter-db.sql https://github.com/yfauser/planespotter/raw/master/db-install/create-planespotter-db.sql
-      curl -L -o delete-planespotter-db.sh https://github.com/yfauser/planespotter/raw/master/db-install/delete-planespotter-db.sh
-      curl -L -o delete-planespotter-db.sql https://github.com/yfauser/planespotter/raw/master/db-install/delete-planespotter-db.sql
+      curl -L -o create-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/create-planespotter-db.sh
+      curl -L -o create-planespotter-db.sql https://raw.githubusercontent.com/apnex/labops/master/database/create-planespotter-db.sql
+      curl -L -o delete-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/delete-planespotter-db.sh
+      curl -L -o delete-planespotter-db.sql https://raw.githubusercontent.com/apnex/labops/master/database/delete-planespotter-db.sql
       echo "creating a new planespotter db"
       chmod +x create-planespotter-db.sh
       ./create-planespotter-db.sh
@@ -120,13 +120,23 @@ data:
   master.cnf: |
     # Apply this config only on the master.
     [mysqld]
-    log-bin
-    performance_schema = 0
-    key_buffer         = 8M 
-    max_connections    = 30 # Limit connections
-    query_cache_size   = 8M # try 4m if not enough 
-    query_cache_limit  = 512K
-    thread_stack       = 128K
+    local_infile	= 1	# allow local file load
+    performance_schema	= 0
+    key_buffer_size	= 8M 
+    max_connections	= 30	# Limit connections
+    thread_stack	= 128K
+    [mysql]
+    local_infile	= 1	# allow local file load
+    performance_schema	= 0
+    key_buffer_size	= 8M 
+    max_connections	= 30	# Limit connections
+    thread_stack	= 128K
+    [client]
+    local_infile	= 1	# allow local file load
+    performance_schema	= 0
+    key_buffer_size	= 8M 
+    max_connections	= 30	# Limit connections
+    thread_stack	= 128K
 ---
 apiVersion: v1
 kind: ConfigMap

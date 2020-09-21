@@ -1,0 +1,48 @@
+## sql tuning
+performance_schema	= 0
+key_buffer		= 8M 
+max_connections         = 30 # Limit connections
+query_cache_size        = 8M # try 4m if not enough 
+query_cache_limit       = 512K
+thread_stack            = 128K
+
+
+yum install -y mysql
+
+### database prep
+echo "------- MYSQL DATABASE SETUP -------"
+echo "updating apt-get..."
+apt-get update
+echo "apt-get installing curl..."
+apt-get --assume-yes install curl
+apt-get --assume-yes install wget
+apt-get --assume-yes install unzip
+echo "downloading planespotter scripts..."
+mkdir -p ~/planespotter
+mkdir -p ~/planespotter/db-install
+cd ~/planespotter/db-install
+curl -L -o create-planespotter-db.sh https://github.com/yfauser/planespotter/raw/master/db-install/create-planespotter-db.sh
+curl -L -o create-planespotter-db.sql https://github.com/yfauser/planespotter/raw/master/db-install/create-planespotter-db.sql
+curl -L -o delete-planespotter-db.sh https://github.com/yfauser/planespotter/raw/master/db-install/delete-planespotter-db.sh
+curl -L -o delete-planespotter-db.sql https://github.com/yfauser/planespotter/raw/master/db-install/delete-planespotter-db.sql
+echo "creating a new planespotter db"
+chmod +x create-planespotter-db.sh
+./create-planespotter-db.sh
+
+### new setting?
+set global local_infile=true;
+
+[client]
+local_infile=1
+[mysql]
+
+[mysqld]
+local_infile=1
+
+## show global setting
+show global variables like 'local_infile';
+LOAD DATA LOCAL INFILE '~/planespotter/db-install/MASTER.txt'
+INTO TABLE MASTER
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS;

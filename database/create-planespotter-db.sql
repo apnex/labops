@@ -72,4 +72,4 @@ GRANT ALL PRIVILEGES ON planespotter.* TO 'planespotter'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 
 SET GLOBAL max_connect_errors=100000;
-SET GLOBAL max_connections = 400;
+SET GLOBAL max_connections = 40;
