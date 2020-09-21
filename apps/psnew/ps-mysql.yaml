@@ -48,7 +48,7 @@ spec:
           mountPath: /bin/planespotter-install.sh
           subPath: planespotter-install.sh
         - name: mysql-config-file
-          mountPath: /etc/mysql/conf.d/my.cnf
+          mountPath: /etc/mysql/my.cnf
           subPath: my.cnf
         - name: mysql-start
           mountPath: /bin/mysql-start.sh
@@ -119,6 +119,10 @@ metadata:
 data:
   my.cnf: |
     [mysqld]
+    pid-file        = /var/run/mysqld/mysqld.pid
+    socket          = /var/run/mysqld/mysqld.sock
+    datadir         = /var/lib/mysql
+    secure-file-priv= NULL
     skip-host-cache
     skip-name-resolve
     local_infile=1
