@@ -1,20 +1,4 @@
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: planespotter-svc
-  labels:
-    app: planespotter-svc
-  annotations:
-    metallb.universe.tf/allow-shared-ip: host
-spec:
-  selector:
-    app: planespotter-app
-  ports:
-    - port: 80
-      targetPort: 81
-  type: LoadBalancer
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -59,6 +43,19 @@ data:
     REDIS_HOST = 'redis-server'
     REDIS_PORT = '6379'
     LISTEN_PORT = 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: planespotter-svc
+  labels:
+    app: planespotter-svc
+spec:
+  ports:
+    # the port that this service should serve on
+    - port: 80
+  selector:
+    app: planespotter-app
 ---
 apiVersion: apps/v1
 kind: Deployment
