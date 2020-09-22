@@ -33,7 +33,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: mysql
-        image: mysql:8.0.21   ## old: 5.6
+        image: mysql:8.0.21
         env:
           # Use secret in real usage
         - name: MYSQL_ROOT_PASSWORD
@@ -103,16 +103,16 @@ data:
       echo "updating apt-get..."
       apt-get update
       echo "apt-get installing curl..."
-      apt-get --assume-yes install curl
-      # apt-get --assume-yes install unzip # not needed for fake database
+      apt-get install -y curl
+      # apt-get install -y unzip # not needed for fake database
       echo "downloading planespotter scripts..."
       mkdir ~/planespotter
       mkdir ~/planespotter/db-install
       cd ~/planespotter/db-install
-      curl -L -o create-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/fake-planespotter-db.sh # fake database
-      curl -L -o create-planespotter-db.sql https://raw.githubusercontent.com/apnex/labops/master/database/create-planespotter-db.sql
-      curl -L -o delete-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/delete-planespotter-db.sh
-      curl -L -o delete-planespotter-db.sql https://raw.githubusercontent.com/apnex/labops/master/database/delete-planespotter-db.sql
+      curl -Lo create-planespotter-db.sh https://raw.githubusercontent.com/apnex/planespotter/master/database/fake-planespotter-db.sh # fake database
+      curl -Lo create-planespotter-db.sql https://raw.githubusercontent.com/apnex/planespotter/master/database/create-planespotter-db.sql
+      curl -Lo delete-planespotter-db.sh https://raw.githubusercontent.com/apnex/planespotter/master/database/delete-planespotter-db.sh
+      curl -Lo delete-planespotter-db.sql https://raw.githubusercontent.com/apnex/planespotter/master/database/delete-planespotter-db.sql
       echo "creating a new planespotter db"
       chmod +x create-planespotter-db.sh
       ./create-planespotter-db.sh
