@@ -37,7 +37,7 @@ spec:
         app: planespotter
         tier: web
     spec:
-      terminationGracePeriodSeconds: 10
+      terminationGracePeriodSeconds: 3
       containers:
       - name: web-server
         image: apnex/planespotter-web-server:alpine
