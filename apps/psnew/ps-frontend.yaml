@@ -23,7 +23,7 @@ metadata:
     app: planespotter-frontend
     tier: frontend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: planespotter-frontend
