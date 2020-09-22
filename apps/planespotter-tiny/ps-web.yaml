@@ -4,12 +4,14 @@ kind: Service
 metadata:
   name: vip-planespotter-web
   labels:
-    app: planespotter-web
+    app: planespotter
+    tier: web
   annotations:
     metallb.universe.tf/allow-shared-ip: host
 spec:
   selector:
-    app: planespotter-web
+    app: planespotter
+    tier: web
   ports:
     - port: 80
       targetPort: 80
@@ -20,18 +22,19 @@ kind: Deployment
 metadata:
   name: planespotter-web
   labels:
-    app: planespotter-web
-    tier: frontend
+    app: planespotter
+    tier: web
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: planespotter-web
+      app: planespotter
+      tier: web
   template:
     metadata:
       labels:
-        app: planespotter-web
-        tier: frontend
+        app: planespotter
+        tier: web
     spec:
       containers:
       - name: web-server
