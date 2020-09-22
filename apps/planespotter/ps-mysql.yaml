@@ -33,7 +33,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: mysql
-        image: mysql:5.6
+        image: mysql:8.0.21   ## old: 5.6
         env:
           # Use secret in real usage
         - name: MYSQL_ROOT_PASSWORD
@@ -47,6 +47,12 @@ spec:
         - name: mysql-config
           mountPath: /bin/planespotter-install.sh
           subPath: planespotter-install.sh
+        - name: mysql-memtest
+          mountPath: /bin/mysql-memtest.sh
+          subPath: mysql-memtest.sh
+        - name: mysql-config-file
+          mountPath: /etc/mysql/conf.d/custom.cnf
+          subPath: custom.cnf
         - name: mysql-start
           mountPath: /bin/mysql-start.sh
           subPath: mysql-start.sh
@@ -59,6 +65,14 @@ spec:
         configMap:
           defaultMode: 0700
           name: mysql-config-map
+      - name: mysql-config-file
+        configMap:
+          defaultMode: 0664
+          name: mysql-config-file
+      - name: mysql-memtest
+        configMap:
+          defaultMode: 0700
+          name: mysql-memtest
       - name: mysql-start
         configMap:
           defaultMode: 0700
@@ -90,20 +104,42 @@ data:
       apt-get update
       echo "apt-get installing curl..."
       apt-get --assume-yes install curl
-      apt-get --assume-yes install wget
-      apt-get --assume-yes install unzip
+      # apt-get --assume-yes install unzip # not needed for fake database
       echo "downloading planespotter scripts..."
       mkdir ~/planespotter
       mkdir ~/planespotter/db-install
       cd ~/planespotter/db-install
-      curl -L -o create-planespotter-db.sh https://github.com/yfauser/planespotter/raw/master/db-install/create-planespotter-db.sh
-      curl -L -o create-planespotter-db.sql https://github.com/yfauser/planespotter/raw/master/db-install/create-planespotter-db.sql
-      curl -L -o delete-planespotter-db.sh https://github.com/yfauser/planespotter/raw/master/db-install/delete-planespotter-db.sh
-      curl -L -o delete-planespotter-db.sql https://github.com/yfauser/planespotter/raw/master/db-install/delete-planespotter-db.sql
+      curl -L -o create-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/fake-planespotter-db.sh # fake database
+      curl -L -o create-planespotter-db.sql https://raw.githubusercontent.com/apnex/labops/master/database/create-planespotter-db.sql
+      curl -L -o delete-planespotter-db.sh https://raw.githubusercontent.com/apnex/labops/master/database/delete-planespotter-db.sh
+      curl -L -o delete-planespotter-db.sql https://raw.githubusercontent.com/apnex/labops/master/database/delete-planespotter-db.sql
       echo "creating a new planespotter db"
       chmod +x create-planespotter-db.sh
       ./create-planespotter-db.sh
     fi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config-file
+data:
+  custom.cnf: |
+    [mysqld]
+    skip-host-cache
+    skip-name-resolve
+    local_infile       = 1 # enable local file loading
+    #performance_schema = 0  # reduce memory footprint
+    #default_authentication_plugin=mysql_native_password
+    ### mysql memory tuning references
+    # https://tech.labelleassiette.com/how-to-reduce-the-memory-usage-of-mysql-61ea7d1a9bd
+    # https://www.percona.com/blog/2019/08/14/mysql-8-and-mysql-5-7-memory-consumption-on-small-devices/
+    # https://lefred.be/content/mysql-8-0-memory-consumption-on-small-devices/
+    #key_buffer_size = 8M
+    #innodb_buffer_pool_size = 64M
+    #innodb_log_buffer_size = 8M
+    #thread_stack = 128K
+    #tmp_table_size = 8M
+    max_connections = 100
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -116,3 +152,48 @@ data:
     /bin/planespotter-install.sh &
     echo "starting mysqld.."
     /entrypoint.sh mysqld
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-memtest
+data:
+  mysql-memtest.sh: |
+    #!/bin/bash
+    mysql -u root -ppassword -e "show variables; show status" | awk '
+    {
+    VAR[$1]=$2  
+    }
+    END {  
+    MAX_CONN = VAR["max_connections"]  
+    MAX_USED_CONN = VAR["Max_used_connections"]  
+    BASE_MEM=VAR["key_buffer_size"] + VAR["query_cache_size"] + VAR["innodb_buffer_pool_size"] + VAR["innodb_additional_mem_pool_size"] + VAR["innodb_log_buffer_size"]  
+    MEM_PER_CONN=VAR["read_buffer_size"] + VAR["read_rnd_buffer_size"] + VAR["sort_buffer_size"] + VAR["join_buffer_size"] + VAR["binlog_cache_size"] + VAR["thread_stack"] + VAR["tmp_table_size"]  
+    MEM_TOTAL_MIN=BASE_MEM + MEM_PER_CONN*MAX_USED_CONN  
+    MEM_TOTAL_MAX=BASE_MEM + MEM_PER_CONN*MAX_CONN
+    printf "+------------------------------------------+--------------------+\n"  
+    printf "| %40s | %15.3f MB |\n", "key_buffer_size", VAR["key_buffer_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "query_cache_size", VAR["query_cache_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "innodb_buffer_pool_size", VAR["innodb_buffer_pool_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "innodb_additional_mem_pool_size", VAR["innodb_additional_mem_pool_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "innodb_log_buffer_size", VAR["innodb_log_buffer_size"]/1048576  
+    printf "+------------------------------------------+--------------------+\n"  
+    printf "| %40s | %15.3f MB |\n", "BASE MEMORY", BASE_MEM/1048576  
+    printf "+------------------------------------------+--------------------+\n"  
+    printf "| %40s | %15.3f MB |\n", "sort_buffer_size", VAR["sort_buffer_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "read_buffer_size", VAR["read_buffer_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "read_rnd_buffer_size", VAR["read_rnd_buffer_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "join_buffer_size", VAR["join_buffer_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "thread_stack", VAR["thread_stack"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "binlog_cache_size", VAR["binlog_cache_size"]/1048576  
+    printf "| %40s | %15.3f MB |\n", "tmp_table_size", VAR["tmp_table_size"]/1048576  
+    printf "+------------------------------------------+--------------------+\n"  
+    printf "| %40s | %15.3f MB |\n", "MEMORY PER CONNECTION", MEM_PER_CONN/1048576  
+    printf "+------------------------------------------+--------------------+\n"  
+    printf "| %40s | %18d |\n", "Max_used_connections", MAX_USED_CONN  
+    printf "| %40s | %18d |\n", "max_connections", MAX_CONN  
+    printf "+------------------------------------------+--------------------+\n"  
+    printf "| %40s | %15.3f MB |\n", "TOTAL (MIN)", MEM_TOTAL_MIN/1048576  
+    printf "| %40s | %15.3f MB |\n", "TOTAL (MAX)", MEM_TOTAL_MAX/1048576  
+    printf "+------------------------------------------+--------------------+\n"  
+    }'
