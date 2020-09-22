@@ -39,7 +39,7 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: PLANESPOTTER_API_ENDPOINT
-          value: vip-planespotter-app
+          value: svc-planespotter-app
         - name: TIMEOUT_REG
           value: "5"
         - name: TIMEOUT_OTHER
