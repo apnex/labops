@@ -42,7 +42,7 @@ spec:
         - containerPort: 3306
           name: mysql
         volumeMounts:
-        - name: mysql-vol
+        - name: main
           mountPath: /var/lib/mysql
         - name: mysql-config
           mountPath: /bin/planespotter-install.sh
@@ -58,9 +58,6 @@ spec:
           subPath: mysql-start.sh
         command: ["/bin/mysql-start.sh"]
       volumes:
-      - name: mysql-vol
-        persistentVolumeClaim:
-          claimName: mysql-claim
       - name: mysql-config
         configMap:
           defaultMode: 0700
@@ -77,6 +74,15 @@ spec:
         configMap:
           defaultMode: 0700
           name: mysql-start-map
+  volumeClaimTemplates:
+  - metadata:
+      name: main
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 1Gi
 ---
 apiVersion: v1
 kind: ConfigMap
