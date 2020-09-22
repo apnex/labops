@@ -30,7 +30,7 @@ spec:
       labels:
         app: planespotter-sql # has to match .spec.selector.matchLabels
     spec:
-      terminationGracePeriodSeconds: 10
+      terminationGracePeriodSeconds: 3
       containers:
       - name: mysql
         image: mysql:8.0.21

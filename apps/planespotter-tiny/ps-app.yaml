@@ -4,12 +4,14 @@ kind: Service
 metadata:
   name: vip-planespotter-app
   labels:
-    app: planespotter-app
+    app: planespotter
+    tier: app
   annotations:
     metallb.universe.tf/allow-shared-ip: host
 spec:
   selector:
-    app: planespotter-app
+    app: planespotter
+    tier: app
   ports:
     - port: 81
       targetPort: 80
@@ -20,31 +22,37 @@ kind: Service
 metadata:
   name: svc-planespotter-app
   labels:
-    app: planespotter-app
+    app: planespotter
+    tier: app
 spec:
   selector:
-    app: planespotter-app
+    app: planespotter
+    tier: app
   ports:
     - port: 80
       targetPort: 80
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: planespotter-app
+  name: app
   labels:
     app: planespotter
-    tier: app-tier
+    tier: app
 spec:
+  serviceName: app
   replicas: 1
   selector:
     matchLabels:
-      app: planespotter-app
+      app: planespotter
+      tier: app
   template:
     metadata:
       labels:
-        app: planespotter-app
+        app: planespotter
+        tier: app
     spec:
+      terminationGracePeriodSeconds: 3
       containers:
       - name: app-server
         image: apnex/planespotter-app-server:alpine

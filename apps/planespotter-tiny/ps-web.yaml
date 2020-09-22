@@ -18,13 +18,14 @@ spec:
   type: LoadBalancer
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: planespotter-web
+  name: web
   labels:
     app: planespotter
     tier: web
 spec:
+  serviceName: web
   replicas: 1
   selector:
     matchLabels:
@@ -36,13 +37,14 @@ spec:
         app: planespotter
         tier: web
     spec:
+      terminationGracePeriodSeconds: 3
       containers:
       - name: web-server
         image: apnex/planespotter-web-server:alpine
         imagePullPolicy: IfNotPresent
         env:
         - name: PLANESPOTTER_API_ENDPOINT
-          value: svc-planespotter-app
+          value: svc-planespotter-app ## test not svc
         - name: TIMEOUT_REG
           value: "5"
         - name: TIMEOUT_OTHER
