@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
       - name: planespotter
-        image: apnex/planespotter-app-server # yfauser/planespotter-app-server:1508888202fc85246248c0892c0d27dda34de8e1
+        image: apnex/planespotter-app-server:alpine # yfauser/planespotter-app-server:1508888202fc85246248c0892c0d27dda34de8e1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
