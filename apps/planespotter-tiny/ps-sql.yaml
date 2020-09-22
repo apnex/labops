@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql
+  name: vip-planespotter-sql
   labels:
     app: mysql
   annotations:
@@ -13,26 +13,26 @@ spec:
     name: mysql
   type: LoadBalancer
   selector:
-    app: mysql
+    app: planespotter-sql
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: mysql
+  name: set-mysql
 spec:
-  serviceName: mysql
+  serviceName: vip-planespotter-sql
   replicas: 1
   selector:
     matchLabels:
-      app: mysql # has to match .spec.template.metadata.labels
+      app: planespotter-sql # has to match .spec.template.metadata.labels
   template:
     metadata:
       labels:
-        app: mysql # has to match .spec.selector.matchLabels
+        app: planespotter-sql # has to match .spec.selector.matchLabels
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-      - name: mysql
+      - name: sql
         image: mysql:8.0.21
         env:
           # Use secret in real usage
