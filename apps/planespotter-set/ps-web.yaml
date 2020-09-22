@@ -1,0 +1,46 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vip-planespotter-web
+  labels:
+    app: planespotter-web
+  annotations:
+    metallb.universe.tf/allow-shared-ip: host
+spec:
+  selector:
+    app: planespotter-web
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: planespotter-web
+  labels:
+    app: planespotter-web
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: planespotter-web
+  template:
+    metadata:
+      labels:
+        app: planespotter-web
+        tier: frontend
+    spec:
+      containers:
+      - name: web-server
+        image: apnex/planespotter-web-server:alpine
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PLANESPOTTER_API_ENDPOINT
+          value: svc-planespotter-app
+        - name: TIMEOUT_REG
+          value: "5"
+        - name: TIMEOUT_OTHER
+          value: "5"

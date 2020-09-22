@@ -65,7 +65,7 @@ metadata:
   name: planespotter-app-cfg
 data:
   config.cfg: |
-    DATABASE_URL = 'sql' # can set to fqdn/IP
+    DATABASE_URL = 'mysql' # can set to fqdn/IP
     DATABASE_USER = 'planespotter'
     DATABASE_PWD = 'VMware1!'
     DATABASE = 'planespotter'
