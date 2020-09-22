@@ -4,40 +4,35 @@ kind: Service
 metadata:
   name: vip-planespotter-web
   labels:
-    app: planespotter
-    tier: web
+    app: planespotter-web
   annotations:
     metallb.universe.tf/allow-shared-ip: host
 spec:
   selector:
-    app: planespotter
-    tier: web
+    app: planespotter-web
   ports:
     - port: 80
       targetPort: 80
   type: LoadBalancer
 ---
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: web
+  name: planespotter-web
   labels:
-    app: planespotter
-    tier: web
+    app: planespotter-web
+    tier: frontend
 spec:
-  serviceName: web
   replicas: 1
   selector:
     matchLabels:
-      app: planespotter
-      tier: web
+      app: planespotter-web
   template:
     metadata:
       labels:
-        app: planespotter
-        tier: web
+        app: planespotter-web
+        tier: frontend
     spec:
-      terminationGracePeriodSeconds: 10
       containers:
       - name: web-server
         image: apnex/planespotter-web-server:alpine
