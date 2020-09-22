@@ -4,7 +4,7 @@ kind: Service
 metadata:
   name: vip-planespotter-sql
   labels:
-    app: mysql
+    app: planespotter-sql
   annotations:
     metallb.universe.tf/allow-shared-ip: host
 spec:
@@ -18,7 +18,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: set-mysql
+  name: sql
 spec:
   serviceName: vip-planespotter-sql
   replicas: 1
@@ -32,7 +32,7 @@ spec:
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-      - name: sql
+      - name: mysql
         image: mysql:8.0.21
         env:
           # Use secret in real usage
