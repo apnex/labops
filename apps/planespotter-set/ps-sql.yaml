@@ -77,6 +77,15 @@ spec:
         configMap:
           defaultMode: 0700
           name: mysql-start-map
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-claim
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 1Gi
 ---
 apiVersion: v1
 kind: ConfigMap
