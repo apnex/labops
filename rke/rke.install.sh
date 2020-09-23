@@ -24,7 +24,7 @@ chmod +x /usr/local/bin/kubectl
 kubectl version --client
 
 ## initialise rke
-read -r -d '' RKECONFIG <<-'EOF'
+cat << EOF > ./rke.config.yaml
 nodes:
   - address: localhost
     user: rke
@@ -39,8 +39,7 @@ monitoring:
 network:
   plugin: calico
 EOF
-echo ${RKECONFIG}
-echo "${RKECONFIG}" | rke up --config -
+rke up --config ./rke.config.yaml
 
 ## copy kubeconfig
 mkdir -p $HOME/.kube
