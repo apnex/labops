@@ -16,11 +16,11 @@ echo "### remove kubeconfig ###"
 sleep 1
 rm -rf $HOME/.kube
 
-echo "### remove kubectl ###"
+echo "### remove kubectl cli ###"
 sleep 1
 rm -f /usr/local/bin/kubectl
 
-echo "### remove kubectl ###"
+echo "### remove rke cli ###"
 sleep 1
 rm -f /usr/local/bin/rke
 
