@@ -8,12 +8,12 @@ DISK: 32 GB
 ---
 ### install docker
 ```
-curl -fsSL https://docker.labops.sh/install | sh
+curl -fsSL http://docker.labops.sh/install | sh
 ```
 
 ### install rke
 ```
-curl -fsSL https://rke.labops.sh/install | sh
+curl -fsSL http://rke.labops.sh/install | sh
 ```
 
 ### check cluster
