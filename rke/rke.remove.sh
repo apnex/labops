@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "### teardown rke cluster ###"
 sleep 1
-echo "y" | rke remove --config ./rke.config.yaml
+echo "y" | rke remove --config ./rke.config.yaml 2>/dev/null
 
 echo "### clear rancher images ###"
 sleep 1
