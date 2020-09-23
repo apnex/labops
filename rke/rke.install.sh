@@ -31,7 +31,7 @@ kubectl version --client
 
 echo "### initialise rke cluster ###"
 sleep 1
-cat << EOF > ./rke.config.yaml
+cat << EOF > ~/rke.config.yaml
 nodes:
   - address: localhost
     user: rke
@@ -46,7 +46,7 @@ monitoring:
 network:
   plugin: calico
 EOF
-rke up --config ./rke.config.yaml
+rke up --config ~/rke.config.yaml
 
 echo "### sync kubeconfig ###"
 sleep 1
