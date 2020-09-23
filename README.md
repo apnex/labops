@@ -16,15 +16,15 @@ curl -fsSL https://docker.labops.sh/install | sh
 curl -fsSL https://rke.labops.sh/install | sh
 ```
 
+### check cluster
+```
+kubectl get nodes
+kubectl get pods -A
+```
+
 ### clone labops
 ```
 yum -y install git
 git clone https://github.com/apnex/labops
 cd labops
-```
-
-### check cluster
-```
-kubectl get nodes
-kubectl get pods -A
 ```
