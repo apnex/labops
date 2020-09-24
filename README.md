@@ -1,5 +1,5 @@
 # labops.sh
-## declarative gitops for compelling demo environments
+**declarative gitops for compelling lab and demo environments**  
 
 ### start with a minimal CentOS 7 VM
 CPU: 4 vCPU  
