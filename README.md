@@ -1,3 +1,6 @@
+# labops.sh
+## declarative gitops for compelling demo environments
+
 ### start with a minimal CentOS 7 VM
 CPU: 4 vCPU  
 MEM: 4 GB  
@@ -8,12 +11,12 @@ DISK: 32 GB
 ---
 ### install docker
 ```
-curl -fsSL http://docker.labops.sh/install | sh
+curl -fsSL http://labops.sh/docker/install | sh
 ```
 
 ### install rke
 ```
-curl -fsSL http://rke.labops.sh/install | sh
+curl -fsSL http://labops.sh/rke/install | sh
 ```
 
 ### check cluster
@@ -25,6 +28,6 @@ kubectl get pods -A
 ### clone labops
 ```
 yum -y install git
-git clone https://github.com/apnex/labops
+git clone https://labops.sh
 cd labops
 ```
