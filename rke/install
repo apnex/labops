@@ -8,6 +8,8 @@ chmod 700 /home/rke/.ssh
 chmod -R go= /home/rke/.ssh
 
 echo "### create and copy ssh keys for rke user ###"
+echo "HOME [$HOME]"
+echo "PWD [$PWD]"
 sleep 1
 cat /dev/zero | ssh-keygen -q -N "" >/dev/null
 yes | \cp ~/.ssh/id_rsa.pub /home/rke/.ssh/authorized_keys
@@ -18,20 +20,20 @@ EOT
 
 echo "### install rke cli ###"
 sleep 1
-curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/download/v1.2.0-rc10/rke_linux-amd64
-chmod +x /usr/local/bin/rke
+curl -Lo /usr/bin/rke https://github.com/rancher/rke/releases/download/v1.2.0-rc10/rke_linux-amd64
+chmod +x /usr/bin/rke
 rke --version
 
 echo "### install kubectl cli ###"
 sleep 1
 KUBERELEASE=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
-curl -Lo /usr/local/bin/kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERELEASE}/bin/linux/amd64/kubectl"
-chmod +x /usr/local/bin/kubectl
+curl -Lo /usr/bin/kubectl "https://storage.googleapis.com/kubernetes-release/release/${KUBERELEASE}/bin/linux/amd64/kubectl"
+chmod +x /usr/bin/kubectl
 kubectl version --client
 
 echo "### initialise rke cluster ###"
 sleep 1
-cat << EOF > ~/rke.config.yaml
+cat << EOF > /root/rke.config.yaml
 nodes:
   - address: localhost
     user: rke
@@ -46,11 +48,11 @@ monitoring:
 network:
   plugin: calico
 EOF
-rke up --config ~/rke.config.yaml
+rke up --config /root/rke.config.yaml
 
 echo "### sync kubeconfig ###"
 sleep 1
-mkdir -p $HOME/.kube
-cp kube_config_rke.config.yaml ~/.kube/config
+mkdir -p /root/.kube
+cp kube_config_rke.config.yaml /root/.kube/config
 
 echo "### rke/install complete ###"
