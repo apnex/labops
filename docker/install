@@ -1,7 +1,7 @@
 #!/bin/bash
 ## combined workflow for centos 7 docker preparation
 
-### base OS prep
+# base OS prep
 echo "### install baseos prerequisites ###"
 sleep 1
 yum install -y epel-release
@@ -10,19 +10,19 @@ yum install -y \
 	jq \
 	open-vm-tools
 
-### disable selinux
+# disable selinux
 echo "### disable selinux ###"
 sleep 1
 setenforce 0
 sed -i 's/^SELINUX=[a-z]*$/SELINUX=disabled/' /etc/selinux/config
 
-### disable swap
+# disable swap
 echo "### disable swap ###"
 sleep 1
 sed -i '/swap/d' /etc/fstab
 swapoff -a
 
-### load modules
+# load modules
 echo "### check and load modules ###"
 sleep 1
 read -r -d '' MODULELIST <<'EOF'
@@ -68,7 +68,7 @@ for MODULE in $(printf "${MODULELIST}" | jq -r '.[]'); do
 		fi
 	fi;
 done
-echo "Performing module check.. "
+echo "### performing module check.. "
 for MODULE in $(printf "${MODULELIST}" | jq -r '.[]'); do
 	if [[ $(lsmod | grep ${MODULE}) ]]; then
 		echo "module ${MODULE} is LOADED";
@@ -79,7 +79,7 @@ for MODULE in $(printf "${MODULELIST}" | jq -r '.[]'); do
 	fi;
 done
 
-### enable ip-forward / nf-call-iptables
+# enable ip-forward / nf-call-iptables
 echo "### enable ip_forward, ns-call-iptables ###"
 sleep 1
 cat <<-EOF > /etc/sysctl.d/k8s.conf
@@ -103,7 +103,7 @@ yum remove \
 	docker-logrotate \
 	docker-engine
 
-### setup docker repo
+# setup docker repo
 echo "### setup docker repo ###"
 sleep 1
 yum install -y \
@@ -112,7 +112,7 @@ yum-config-manager \
 	--add-repo \
 	https://download.docker.com/linux/centos/docker-ce.repo
 
-### install docker
+# install docker
 echo "### install docker ###"
 sleep 1
 yum install -y \
