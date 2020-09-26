@@ -1,0 +1,30 @@
+## labops.sh/docker/install
+TTL RX = 100 MBYTE
+TTL TX = 1 MBYTE
+
+## labops.sh/rke/install
+
+TTL RX = 840 MBYTE
+TTL TX = 4 MBYTE
+
+## others
+
+## yum install -y git 
+857 RX MBYTE
+
+## git clone labops.sh
+858
+
+## storage
+872 MBYTE
+
+## metallb
+905 MBYTE
+
+## argo
+1440 MBYTES
+
+## planespotter small
+-- hit sync
+1650 MBYTES
+

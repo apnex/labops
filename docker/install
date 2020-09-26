@@ -125,3 +125,5 @@ echo "### start docker ###"
 sleep 1
 systemctl enable docker
 systemctl start docker
+
+echo "### docker/install complete ###"

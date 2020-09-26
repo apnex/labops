@@ -52,3 +52,5 @@ echo "### sync kubeconfig ###"
 sleep 1
 mkdir -p $HOME/.kube
 cp kube_config_rke.config.yaml ~/.kube/config
+
+echo "### rke/install complete ###"
