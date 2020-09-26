@@ -13,9 +13,7 @@ cd ${HOME}
 echo "HOME [$HOME]"
 echo "PWD [$PWD]"
 sleep 1
-echo "SSH-KEYGEN BEFORE"
-cat /root/.ssh/id_rsa.pub
-(cat /dev/zero | ssh-keygen -q -N "") 2>/dev/null
+(cat /dev/zero | ssh-keygen -q -N "") 1>/dev/null 2>/dev/null
 echo "SSH-KEYGEN FINISHED"
 cat /root/.ssh/id_rsa.pub
 \cp /root/.ssh/id_rsa.pub /home/rke/.ssh/authorized_keys
