@@ -3,7 +3,8 @@
 
 ## What is it
 labops.sh is a collection of bootstrap scripts organised to provide simple automation of multi-tier microservices applications for demo purposes.  
-
+The created VMs are designed to be fully self-assembling, building upon each layer to the next, resulting in a fully functioning single-node Kubernetes cluster.  
+From here, a fully working web application can be deployed via the in-built catalogue.  
 
 Simple
 - Clear and minimal entrypoints to start, fewest steps to known good
@@ -16,8 +17,6 @@ Serviceable
 
 Portable  
 - Designed with minimal or no external dependencies so it can be run on on virtualised public or private cloud environment  
-
-It leverages Kubernetes and GitOps to declaratively publish
 
 ## TLDR;
 

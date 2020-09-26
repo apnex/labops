@@ -14,13 +14,9 @@ echo "HOME [$HOME]"
 echo "PWD [$PWD]"
 sleep 1
 echo "SSH-KEYGEN BEFORE"
-ls -la /root
-ls -la /root/.ssh
 cat /root/.ssh/id_rsa.pub
-cat /dev/zero | ssh-keygen -q -N "" >/dev/null
+(cat /dev/zero | ssh-keygen -q -N "") 2>/dev/null
 echo "SSH-KEYGEN FINISHED"
-ls -la /root
-ls -la /root/.ssh
 cat /root/.ssh/id_rsa.pub
 \cp /root/.ssh/id_rsa.pub /home/rke/.ssh/authorized_keys
 chown -R rke:docker /home/rke
