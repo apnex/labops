@@ -13,9 +13,16 @@ cd ${HOME}
 echo "HOME [$HOME]"
 echo "PWD [$PWD]"
 sleep 1
+echo "SSH-KEYGEN BEFORE"
+ls -la /root
+ls -la /root/.ssh
+cat /root/.ssh/id_rsa.pub
 cat /dev/zero | ssh-keygen -q -N "" >/dev/null
 echo "SSH-KEYGEN FINISHED"
-yes | \cp /root/.ssh/id_rsa.pub /home/rke/.ssh/authorized_keys
+ls -la /root
+ls -la /root/.ssh
+cat /root/.ssh/id_rsa.pub
+\cp /root/.ssh/id_rsa.pub /home/rke/.ssh/authorized_keys
 chown -R rke:docker /home/rke
 ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" rke@localhost << EOT
 	docker version
