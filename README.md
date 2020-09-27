@@ -28,13 +28,14 @@ By being modular and declarative, a `labops.sh` node can quickly be repurposed o
 
 ---
 ## TLDR; Quick Start
-The base VM image is based on Centos 7, and is deployed through an unattended network installation over the Internet.  
+The base VM image is currently built on Centos 7.  
+It is deployed through an unattended network installation over the Internet.  
 Once booted, multiple packages are then bootstrapped to finalise the node.  
 
 To use a completed node, simply download the pre-made ISO from here:  
 https://labops.sh/boot.iso
 
-It is a tiny 1MB ISO - as it contains only iPXE code.  
+This is a tiny 1MB ISO - as it contains only iPXE code.  
 All remaining OS files will be bootstrapped over the Internet via HTTP.  
 Just mount this ISO to a CDROM of a VM and power on.  
 
