@@ -75,6 +75,7 @@ https://github.com/apnex/pxe
 - Builds upon **1**, and prepares the node for Docker suitable for container use
 - Useful for labs requiring a docker VM  
 
+Get the iso here:  
 https://labops.sh/docker/boot.iso  
 
 ### 3. `rke` node
@@ -82,12 +83,14 @@ https://labops.sh/docker/boot.iso
 - All-in-one k8s node suitable for local microservices deployment
 - Batteries included - support for Service Type=LoadBalancer and Dynamic PVCs
 
+Get the iso here:  
 https://labops.sh/rke/boot.iso  
 
 ### 4. `labops` node
 - Builds upon **3**, and deploys the Argo CD platform for an automated microservices control-plane on the node
 - Automatically evolves through all 4 stages ready for microservices application deployment
 
+Get the iso here:  
 https://labops.sh/boot.iso
 
 ---
