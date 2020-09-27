@@ -23,12 +23,13 @@ It is engineered to be:
 - Designed with minimal or no external dependencies so it can be run on any public or private cloud environment  
 
 After provisioning a VM, a fully working web application can then be deployed via the in-built catalogue reachable via: https://X.X.X.X:8472  
+
 By being modular and declarative, a `labops.sh` node can quickly be repurposed or have its microservices application changed.  
 
 ---
 ## TLDR; Quick Start
 The base VM image is based on Centos 7, and is deployed through an unattended network installation over the Internet.  
-More information on how this works located here: https://github.com/apnex/pxe  
+Once booted, multiple packages are then bootstrapped to finalise the node.  
 
 To use a completed node, simply download the pre-made ISO from here:  
 https://labops.sh/boot.iso
@@ -63,7 +64,11 @@ Default SSH/Console credentials:  `root` / `VMware1!`
 - No extraneous packages outside minimal core  
 - Suitable for a wide variety of lab and demo tasks  
 
+Get the iso here:  
 https://labops.sh/base/boot.iso  
+
+More information on `base` node:  
+https://github.com/apnex/pxe  
 
 ### 2. `docker` node
 - Builds upon **1**, and prepares the node for Docker suitable for container use
@@ -79,7 +84,7 @@ https://labops.sh/docker/boot.iso
 https://labops.sh/rke/boot.iso  
 
 ### 4. `labops` node
-- Builds upon **3**, and deploys the Argo CD platform for automated microservices control-plane on the node
+- Builds upon **3**, and deploys the Argo CD platform for an automated microservices control-plane on the node
 - Automatically evolves through all 4 stages ready for microservices application deployment
 
 https://labops.sh/boot.iso
