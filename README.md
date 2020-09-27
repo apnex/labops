@@ -27,7 +27,7 @@ After provisioning a VM, a fully working web application can then be deployed vi
 ## TLDR; Quick Start
 The base VM image is based on Centos 7, is is deployed through an unattended network installation over the Internet.  
 
-To use a complete node, simply download the pre-made ISO from here:  
+To use a completed node, simply download the pre-made ISO from here:  
 https://labops.sh/boot.iso
 
 It is a tiny 1MB ISO - as it contains only iPXE code.  
@@ -48,28 +48,35 @@ Boot Order (must be **BIOS**):
 This is to ensure that after installation, the VM will boot normally.  
 If CDROM is before HDD, the VM will be in an infinite loop restarting and rebuilding itself!  
 
-Once powered on, the `labops.sh` VM evolves through 4 distinct, yet decoupled stages.  
+Once powered on, the `labops.sh` VM automatically evolves through 4 distinct, yet decoupled stages.  
 Optionally, you can elect to download the ISO directly for the stage listed.  
 This will allow you to stop there and customise your configuration.  
 
-### 1. Base Node
+### 1. `base` node
 - Minimal network installation of Centos 7 OS streamed over the Internet.
-- No extraneous packages
+- No extraneous packages outside minimal core  
+- Suitable for a wide variety of lab and demo tasks  
 
 https://labops.sh/base/boot.iso  
 
-### 2. Tuned Docker Node
+### 2. `docker` node
 - Builds upon 1), and prepares the node for Docker suitable for container use
+- Useful for labs requiring docker  
 
 https://labops.sh/docker/boot.iso  
 
-### 3. Single-Node Kubernetes Appliance
+### 3. `rke` node
 - Builds upon 2), and provisions Kubernetes suitable for single-appliance use
+- All-in-one k8s node suitable for local microservices deployment
+- Batteries included - support Service Type=LoadBalancer and Dynamic PVCs
 
 https://labops.sh/rke/boot.iso  
 
-### 4. Labops Node
+### 4. `labops` node
 - Builds upon 3), and deploys the Argo CD platform for automated microservices control-plane on the node
+- Auto evolves through all 4 steps ready for application use
+
+https://labops.sh/boot.iso
 
 ### start with a minimal CentOS 7 VM
 CPU: 4 vCPU  
