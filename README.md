@@ -26,7 +26,7 @@ After provisioning a VM, a fully working web application can then be deployed vi
 
 ---
 ## TLDR; Quick Start
-The base VM image is based on Centos 7, is is deployed through an unattended network installation over the Internet.  
+The base VM image is based on Centos 7, and is deployed through an unattended network installation over the Internet.  
 More information on how this works located here: https://github.com/apnex/pxe  
 
 To use a completed node, simply download the pre-made ISO from here:  
