@@ -1,0 +1,51 @@
+defaultRouteAction:
+  urlRewrite:
+    hostRewrite: raw.githubusertest.com
+    pathPrefixRewrite: /apnex/labops
+defaultService: https://www.googleapis.com/compute/v1/projects/labops/global/backendServices/svc-github-raw
+hostRules:
+- hosts:
+  - labops.sh
+  pathMatcher: path-matcher-1
+kind: compute#urlMap
+name: map-labops
+pathMatchers:
+- defaultUrlRedirect:
+    hostRedirect: github.com
+    httpsRedirect: false
+    pathRedirect: /apnex/labops
+    redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+    stripQuery: false
+  name: path-matcher-1
+  pathRules:
+  - paths:
+    - /info/refs
+    urlRedirect:
+      hostRedirect: github.com
+      httpsRedirect: false
+      pathRedirect: /apnex/labops/info/refs
+      redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+      stripQuery: false
+  - paths:
+    - /git-upload-pack
+    urlRedirect:
+      hostRedirect: github.com
+      httpsRedirect: false
+      pathRedirect: /apnex/labops/git-upload-pack
+      redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+      stripQuery: false
+  - paths:
+    - /
+    urlRedirect:
+      hostRedirect: github.com
+      httpsRedirect: false
+      pathRedirect: /apnex/labops
+      redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+      stripQuery: false
+  - paths:
+    - /*
+    routeAction:
+      urlRewrite:
+        hostRewrite: raw.githubusercontent.com
+        pathPrefixRewrite: /apnex/labops/master/
+    service: https://www.googleapis.com/compute/v1/projects/labops/global/backendServices/svc-github-raw

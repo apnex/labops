@@ -1,0 +1,5 @@
+defaultUrlRedirect:
+  httpsRedirect: true
+  redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+kind: compute#urlMap
+name: map-labops-redirect
