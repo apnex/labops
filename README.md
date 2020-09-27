@@ -51,7 +51,7 @@ This is to ensure that after installation, the VM will boot normally.
 If CDROM is before HDD, the VM will be in an infinite loop restarting and rebuilding itself!  
 
 Once powered on, the `labops.sh` VM automatically evolves through 4 distinct, yet decoupled stages.  
-Optionally, you can elect to download the ISO directly for the particular stage.  
+Optionally, you can elect to download the ISO directly for that particular stage.  
 This will allow you to stop there and customise your configuration.  
 
 Default SSH/Console credentials:  `root` / `VMware1!`  
@@ -84,13 +84,19 @@ https://labops.sh/rke/boot.iso
 https://labops.sh/boot.iso
 
 ---
+## Verification
+Once you have deployed a VM to stage 3 or 4, you can login with the default SSH credentials and verify status.  
+
 ### check local cluster
 ```
 kubectl get nodes
 kubectl get pods -A
 ```
 
+The node will be pulling images from DockerHub, this could take a few minutes to start.  
+
 ### clone labops
+Optionally, for access to all `labops.sh` scripts, you can clone this repository.  
 ```
 yum -y install git
 git clone https://labops.sh
