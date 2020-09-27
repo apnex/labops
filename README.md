@@ -54,6 +54,8 @@ This is to ensure that after installation, the VM will boot normally.
 If CDROM is before HDD, the VM will be in an infinite loop restarting and rebuilding itself!  
 
 Once powered on, the `labops.sh` VM automatically evolves through 4 distinct, yet decoupled stages.  
+This could take up to 10 minutes, depending on Internet speeds - be patient and grab a coffee!  
+
 Optionally, you can elect to download the ISO directly for that particular stage.  
 This will allow you to stop there and customise your configuration.  
 
