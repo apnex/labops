@@ -24,6 +24,7 @@ It is engineered to be:
 
 After provisioning a VM, a fully working web application can then be deployed via the in-built catalogue reachable via: https://X.X.X.X:8472
 
+---
 ## TLDR; Quick Start
 The base VM image is based on Centos 7, is is deployed through an unattended network installation over the Internet.  
 More information on how this works located here: https://github.com/apnex/pxe  
@@ -50,57 +51,40 @@ This is to ensure that after installation, the VM will boot normally.
 If CDROM is before HDD, the VM will be in an infinite loop restarting and rebuilding itself!  
 
 Once powered on, the `labops.sh` VM automatically evolves through 4 distinct, yet decoupled stages.  
-Optionally, you can elect to download the ISO directly for the stage listed.  
+Optionally, you can elect to download the ISO directly for the particular stage.  
 This will allow you to stop there and customise your configuration.  
 
+Default SSH/Console credentials:  `root` / `VMware1!`  
+
+---
 ### 1. `base` node
-- Minimal network installation of Centos 7 OS streamed over the Internet.
+- Minimal unattended network installation of Centos 7 OS streamed over the Internet.
 - No extraneous packages outside minimal core  
 - Suitable for a wide variety of lab and demo tasks  
 
 https://labops.sh/base/boot.iso  
 
 ### 2. `docker` node
-- Builds upon 1), and prepares the node for Docker suitable for container use
-- Useful for labs requiring docker  
+- Builds upon **1**, and prepares the node for Docker suitable for container use
+- Useful for labs requiring a docker VM  
 
 https://labops.sh/docker/boot.iso  
 
 ### 3. `rke` node
-- Builds upon 2), and provisions Kubernetes suitable for single-appliance use
+- Builds upon **2**, and provisions Kubernetes suitable for single-appliance use
 - All-in-one k8s node suitable for local microservices deployment
-- Batteries included - support Service Type=LoadBalancer and Dynamic PVCs
+- Batteries included - support for Service Type=LoadBalancer and Dynamic PVCs
 
 https://labops.sh/rke/boot.iso  
 
 ### 4. `labops` node
-- Builds upon 3), and deploys the Argo CD platform for automated microservices control-plane on the node
-- Auto evolves through all 4 steps ready for application use
+- Builds upon **3**, and deploys the Argo CD platform for automated microservices control-plane on the node
+- Automatically evolves through all 4 stages ready for microservices application deployment
 
 https://labops.sh/boot.iso
 
-### start with a minimal CentOS 7 VM
-CPU: 4 vCPU  
-MEM: 4 GB  
-DISK: 32 GB  
-
-[https://github.com/apnex/pxe](https://github.com/apnex/pxe)
-
-### 
-It is built to be highly modular, with 
-
 ---
-### install docker
-```
-curl -fsSL http://labops.sh/docker/install | sh
-```
-
-### install rke
-```
-curl -fsSL http://labops.sh/rke/install | sh
-```
-
-### check cluster
+### check local cluster
 ```
 kubectl get nodes
 kubectl get pods -A
