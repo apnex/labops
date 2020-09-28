@@ -112,5 +112,5 @@ Optionally, for access to all `labops.sh` scripts, you can clone this repository
 ```
 yum -y install git
 git clone https://labops.sh
-cd labops
+cd labops.sh
 ```
