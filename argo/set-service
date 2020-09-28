@@ -1,6 +1,6 @@
 #!/bin/bash
 kubectl -n argocd delete services argocd-server
-kubectl -n argocd apply -f argo.vip.yaml
+kubectl -n argocd apply -f https://labops.sh/argo/argo.vip.yaml
 
 #kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
 #PATCH=$(jq -nc '{

@@ -1,6 +1,6 @@
 #!/bin/bash
-## adjust to get each app and directly pipe to replace
 
+## clear finalizers and delete namespace
 APPS=$(kubectl -n argocd get applications -o json)
 IFS=$'\n'
 for APP in $(echo "${APPS}" | jq -c '.items[]'); do

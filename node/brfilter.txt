@@ -1,3 +1,0 @@
-echo br_netfilter > /etc/modules-load.d/br_netfilter.conf
-modprobe br_netfilter
-lsmod | grep br_netfilter
