@@ -22,7 +22,7 @@ It is engineered to be:
 **Portable**
 - Designed with minimal or no external dependencies so it can be run on any public or private cloud environment  
 
-After provisioning a VM, a fully working web application can then be deployed via the in-built catalogue.
+After provisioning a VM, a fully working web application can then be deployed via the in-built catalogue.  
 This reachable via:
 - https://X.X.X.X:8472
 - `admin` / `VMware1!`
