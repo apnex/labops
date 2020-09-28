@@ -12,10 +12,13 @@ function getThumbprint {
 	printf "%s\n" "${CODE}" |  sed "s/\(.*\)/\L\1/g" | sed "s/://g"
 }
 
-SOCKET="localhost:8080"
-PRINT=$(getThumbprint "${SOCKET}" thumbprint 2>/dev/null)
-if [[ -n ${PRINT} ]]; then
-	echo "${PRINT}"
-else
-	echo "No response from ${SOCKET}"
-fi
+SOCKET="localhost:6443"
+THUMBPRINT=$(getThumbprint "${SOCKET}" thumbprint 2>/dev/null)
+while [[ -z ${THUMBPRINT} ]]; do
+	echo "socket [ ${SOCKET} ] thumbprint [ no response ]"
+	sleep 3
+	THUMBPRINT=$(getThumbprint "${SOCKET}" thumbprint 2>/dev/null)
+done
+
+echo "socket [ ${SOCKET} ] thumbprint [ ${THUMBPRINT} ]"
+exit
