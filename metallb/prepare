@@ -1,4 +1,12 @@
 #!/bin/bash
+## kubectl healthcheck
+HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
+while [[ -z ${HEALTHY} ]]; do
+	echo "socket [ localhost:6443 ] api [ no response ]"
+	sleep 10
+	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
+done
+echo "socket [ localhost:6443 ] api [ healthy ]"
 
 ## determine IPADDRESS of default route interface
 ETH=$(route | grep ^default | sed "s/.* //")

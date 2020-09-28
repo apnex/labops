@@ -1,3 +1,13 @@
+#!/bin/bash
+## kubectl healthcheck
+HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
+while [[ -z ${HEALTHY} ]]; do
+	echo "socket [ localhost:6443 ] api [ no response ]"
+	sleep 10
+	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
+done
+echo "socket [ localhost:6443 ] api [ healthy ]"
+
 ## install metallb
 # https://metallb.universe.tf/installation/
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml

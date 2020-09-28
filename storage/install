@@ -1,4 +1,14 @@
 #!/bin/bash
+## kubectl healthcheck
+HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
+while [[ -z ${HEALTHY} ]]; do
+	echo "socket [ localhost:6443 ] api [ no response ]"
+	sleep 10
+	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
+done
+echo "socket [ localhost:6443 ] api [ healthy ]"
+
+## commence
 mkdir -p /opt/local-path-provisioner
 kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
 

@@ -1,8 +1,16 @@
 #!/bin/bash
+## kubectl healthcheck
+HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
+while [[ -z ${HEALTHY} ]]; do
+	echo "socket [ localhost:6443 ] api [ no response ]"
+	sleep 10
+	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
+done
+echo "socket [ localhost:6443 ] api [ healthy ]"
 
 ## install metrics server
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
 ## patch metrics server
 #This ensures that metric server can securely connect to localhost:443
-./metrics.patch.sh
+curl -fsSL https://labops.sh/metrics/patch | sh
