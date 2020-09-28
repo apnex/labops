@@ -1,8 +1,6 @@
 #!/bin/bash
 ## kubectl healthcheck
 echo "[[ ${KUBECONFIG} ]]"
-export KUBECONFIG=/root/.kube/config
-ls -la ${KUBECONFIG}
 HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
 while [[ -z ${HEALTHY} ]]; do
 	echo "socket [ localhost:6443 ] api [ no response ]"
