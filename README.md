@@ -65,6 +65,7 @@ This will allow you to stop there and customise your configuration.
 Default root ssh/console credentials:  `root` / `VMware1!`  
 
 ---
+## Node Evolution Stages
 ### 1. `base` node
 - Minimal unattended network installation of Centos 7 OS streamed over the Internet.
 - No extraneous packages outside minimal core  
