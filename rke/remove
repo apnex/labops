@@ -19,11 +19,11 @@ rm -rf $HOME/.kube
 
 echo "### remove kubectl cli ###"
 sleep 1
-rm -f /usr/local/bin/kubectl
+rm -f /usr/bin/kubectl
 
 echo "### remove rke cli ###"
 sleep 1
-rm -f /usr/local/bin/rke
+rm -f /usr/bin/rke
 
 echo "### remove rke service account ###"
 userdel -r rke
