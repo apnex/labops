@@ -22,7 +22,10 @@ It is engineered to be:
 **Portable**
 - Designed with minimal or no external dependencies so it can be run on any public or private cloud environment  
 
-After provisioning a VM, a fully working web application can then be deployed via the in-built catalogue reachable via: https://X.X.X.X:8472  
+After provisioning a VM, a fully working web application can then be deployed via the in-built catalogue.
+This reachable via:
+- https://X.X.X.X:8472
+- `admin` / `VMware1!`
 
 By being modular and declarative, a `labops.sh` node can quickly be repurposed or have its microservices application changed.  
 
@@ -59,7 +62,7 @@ This could take up to 10 minutes, depending on Internet speeds - be patient and 
 Optionally, you can elect to download the ISO directly for that particular stage.  
 This will allow you to stop there and customise your configuration.  
 
-Default SSH/Console credentials:  `root` / `VMware1!`  
+Default root ssh/console credentials:  `root` / `VMware1!`  
 
 ---
 ### 1. `base` node
