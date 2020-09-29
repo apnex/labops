@@ -95,6 +95,7 @@ https://labops.sh/rke/boot.iso
 ### 4. `labops` node
 - Builds upon **3**, and deploys the Argo CD platform for an automated microservices control-plane on the node
 - Automatically evolves through all 4 stages ready for microservices application deployment
+- Catalogue reachable via https://x.x.x.x:8472 with credentials `admin` / `VMware1!`
 
 Get the iso here:  
 https://labops.sh/boot.iso
