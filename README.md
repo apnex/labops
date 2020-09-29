@@ -86,7 +86,7 @@ https://labops.sh/docker/boot.iso
 
 ### 3. `rke` node
 - Builds upon **2**, and provisions Kubernetes suitable for single-appliance use
-- All-in-one k8s node suitable for local microservices deployment
+- All-in-one k8s node useful for local microservices deployment
 - Batteries included - support for Service Type=LoadBalancer and Dynamic PVCs
 
 Get the iso here:  
@@ -119,3 +119,8 @@ yum -y install git
 git clone https://labops.sh
 cd labops.sh
 ```
+
+---
+## Application Catalogue
+Now that you have provisioned a `labops.sh` node, you can begin to deploy apps to it.  
+

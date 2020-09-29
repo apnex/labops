@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scripts-cm
+data:
+  locustfile.py: |
+    from locust import HttpLocust, TaskSet, task
+
+
+    class UserTasks(TaskSet):
+
+        @task
+        def index(self):
+            self.client.get("/")
+
+        @task
+        def stats(self):
+            self.client.get("/index.html")
+
+        @task
+        def stats(self):
+            self.client.get("/registry.html")
+
+        @task
+        def stats(self):
+            self.client.get("/details.html")
+
+        @task
+        def stats(self):
+            self.client.get("/health.html")
+
+        @task
+        def stats(self):
+            self.client.get("/contact.html")
+
+
+    class WebsiteUser(HttpLocust):
+        task_set = UserTasks
+
