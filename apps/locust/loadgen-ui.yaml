@@ -6,6 +6,8 @@ metadata:
   labels:
     app: loadgenerator
     service: loadgen
+  annotations:
+    metallb.universe.tf/allow-shared-ip: host
 spec:
   type: LoadBalancer
   ports:
