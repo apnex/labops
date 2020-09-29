@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: locust-traffic-generator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    path: apps/locust
+    repoURL: 'https://github.com/apnex/labops'
+    targetRevision: HEAD
+  destination:
+    namespace: locust
+    server: 'https://kubernetes.default.svc'
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
