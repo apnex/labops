@@ -10,27 +10,27 @@ data:
     class UserTasks(TaskSet):
 
         @task
-        def index(self):
+        def base(self):
             self.client.get("/")
 
         @task
-        def stats(self):
+        def index(self):
             self.client.get("/index.html")
 
         @task
-        def stats(self):
+        def registry(self):
             self.client.get("/registry.html")
 
         @task
-        def stats(self):
+        def details(self):
             self.client.get("/details.html")
 
         @task
-        def stats(self):
+        def health(self):
             self.client.get("/health.html")
 
         @task
-        def stats(self):
+        def contact(self):
             self.client.get("/contact.html")
 
 
