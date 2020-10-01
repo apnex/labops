@@ -1,0 +1,14 @@
+## setup go
+
+yum install golang-go
+export PATH=$PATH:$(go env GOPATH)/bin
+export GOPATH=$(go env GOPATH)
+
+## clone repo
+git clone https://github.com/carlosedp/cluster-monitoring.git
+
+## modify cluster-monitoring/vars.jsonnet
+  k3s: {
+    enabled: true,
+    master_ip: ['10.30.0.51'],
+  },
