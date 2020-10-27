@@ -24,8 +24,7 @@ EOT
 
 echo "### install rke cli ###"
 sleep 1
-curl -Lo /usr/bin/rke https://github.com/rancher/rke/releases/download/v1.2.1/rke_linux-amd64
-#https://github.com/rancher/rke/releases/latest
+curl -Lo /usr/bin/rke https://github.com/rancher/rke/releases/download/v1.2.0-rc10/rke_linux-amd64
 chmod +x /usr/bin/rke
 rke --version
 
