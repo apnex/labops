@@ -17,19 +17,3 @@ curl -fsSL https://labops.sh/metallb/install | sh
 
 ## install dashboard
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended.yaml
-
-
-Definitely SE-> Controller 8443
-
-Read Mode
-Write Mode
-
-No Orchestrator
-UAG
-
-Configure an IPv4 on the SE
-
-2x TAN double
-GCNE
-Write Planet Spotter
-
