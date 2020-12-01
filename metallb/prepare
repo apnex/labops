@@ -29,4 +29,7 @@ data:
 EOF
 
 echo "${METALPOOL}"
+
+## apply and restart metallb pods to force update existing service IPs
 printf "${METALPOOL}" | kubectl apply -f -
+kubectl -n metallb-system delete pods --all
