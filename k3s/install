@@ -1,0 +1,15 @@
+#!/bin/bash
+
+## k3s env vars
+export K3S_KUBECONFIG_MODE="644"
+export INSTALL_K3S_EXEC=" --no-deploy servicelb --no-deploy traefik"
+
+## install k3s
+curl -fsSL https://get.k3s.io | sh -
+
+## verify status
+systemctl status k3s
+
+## kubectl
+kubectl get nodes
+kubectl get pods -A
