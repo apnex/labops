@@ -25,7 +25,6 @@ metadata:
     app: planespotter
     tier: web
 spec:
-  serviceName: web
   replicas: 1
   selector:
     matchLabels:
