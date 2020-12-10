@@ -1,9 +1,9 @@
 {
-	"contentVersion": "2",
+	"contentVersion": "1",
 	"version": "1",
 	"name": "ao-cl-labops",
 	"created": "2020-09-06T06:43Z",
-	"itemsHref": "items.json",
+	"itemsHref": "library/items.json",
 	"id": "urn:uuid:bf7a3bc4-f49d-4e94-b04e-61d7b111fb95",
 	"capabilities": {
 		"transferIn": [

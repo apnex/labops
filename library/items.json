@@ -8,16 +8,8 @@
 			"created": "2020-11-17T13:52Z",
 			"description": "",
 			"properties": {},
-			"selfHref": "items.json",
+			"selfHref": "library/items.json",
 			"files": [
-				{
-					"name": "boot.iso",
-					"size": 1048576,
-					"etag": "e1723fa09a97fc5fe753ec69396e75aa",
-					"hrefs": [
-						"boot.iso"
-					]
-				},
 				{
 					"name": "labops.centos.7.unattended.iso",
 					"size": 1048576,
