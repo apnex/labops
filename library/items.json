@@ -17,6 +17,14 @@
 					"hrefs": [
 						"library/labops.centos.7.unattended.iso"
 					]
+				},
+				{
+					"name": "boot.iso",
+					"size": 1048576,
+					"etag": "e1723fa09a97fc5fe753ec69396e75aa",
+					"hrefs": [
+						"library/boot.iso"
+					]
 				}
 			]
 		}
