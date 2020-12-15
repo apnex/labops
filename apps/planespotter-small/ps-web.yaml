@@ -20,7 +20,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ing-planespotter-wen
+  name: ing-planespotter-web
 spec:
   rules:
     - host: ps-ingress.vs.lab04
