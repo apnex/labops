@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: planespotter-small
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    path: apps/planespotter-small
+    repoURL: 'https://github.com/apnex/labops'
+    targetRevision: HEAD
+  destination:
+    name: cluster-tenant1
+    namespace: planespotter-small
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true

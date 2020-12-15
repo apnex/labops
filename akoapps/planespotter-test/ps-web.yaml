@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vip-planespotter-web
+  labels:
+    app: planespotter
+    tier: web
+  annotations:
+    metallb.universe.tf/allow-shared-ip: host
+spec:
+  selector:
+    app: planespotter
+    tier: web
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-planespotter-web
+  labels:
+    app: planespotter
+    tier: web
+spec:
+  selector:
+    app: planespotter
+    tier: web
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ing-planespotter-small
+spec:
+  rules:
+    - host: ps-ingress.tkg.lab04
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: svc-planespotter-web
+              port:
+                number: 80
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+  labels:
+    app: planespotter
+    tier: web
+spec:
+  serviceName: web
+  replicas: 1
+  selector:
+    matchLabels:
+      app: planespotter
+      tier: web
+  template:
+    metadata:
+      labels:
+        app: planespotter
+        tier: web
+    spec:
+      terminationGracePeriodSeconds: 3
+      containers:
+      - name: web-server
+        image: apnex/planespotter-web-server:alpine
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PLANESPOTTER_API_ENDPOINT
+          value: svc-planespotter-app ## test not svc
+        - name: TIMEOUT_REG
+          value: "5"
+        - name: TIMEOUT_OTHER
+          value: "5"

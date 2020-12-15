@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: acmefit
+    service: frontend
+spec:
+  selector:
+    matchLabels:
+      app: acmefit
+      service: frontend
+  strategy:
+    type: Recreate
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: acmefit
+        service: frontend
+    spec:
+      containers:
+      - image: gcr.io/vmwarecloudadvocacy/acmeshop-front-end:latest
+        name: frontend
+        env:
+        - name: FRONTEND_PORT
+          value: '3000'
+        - name: USERS_HOST
+          value: 'users'
+        - name: CATALOG_HOST
+          value: 'catalog'
+        - name: ORDER_HOST
+          value: 'order'
+        - name: CART_HOST
+          value: 'cart'
+        - name: USERS_PORT
+          value: '8083'
+        - name: CATALOG_PORT
+          value: '8082'
+        - name: CART_PORT
+          value: '5000'
+        - name: ORDER_PORT
+          value: '6000'
+        - name: JAEGER_AGENT_HOST
+          value: 'localhost'
+        - name: JAEGER_AGENT_PORT
+          value: '6832'
+        ports:
+        - containerPort: 3000
+          name: frontend
