@@ -32,19 +32,22 @@ spec:
     - port: 80
       targetPort: 80
 ---
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: frontend-ingress
+  name: ing-planespotter-small
 spec:
   rules:
     - host: ps-ingress.tkg.lab04
       http:
         paths:
         - path: /
+          pathType: Prefix
           backend:
-            serviceName: svc-planespotter-web
-            servicePort: 80
+            service:
+              name: svc-planespotter-web
+              port:
+                number: 80
 ---
 apiVersion: apps/v1
 kind: StatefulSet
