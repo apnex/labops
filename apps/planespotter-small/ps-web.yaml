@@ -38,7 +38,7 @@ metadata:
   name: frontend-ingress
 spec:
   rules:
-    - host: ps-ingress.vs.lab04
+    - host: ps-ingress.tkg.lab04
       http:
         paths:
         - path: /
