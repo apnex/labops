@@ -54,7 +54,7 @@ monitoring:
 network:
   plugin: calico
 EOF
-rke up --config /root/rke.config.yaml
+rke up --config /root/rke.config.yaml --ignore-docker-version
 
 echo "### sync kubeconfig ###"
 sleep 1
