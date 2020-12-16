@@ -3,4 +3,4 @@ kind: ConfigMap
 metadata:
   name: locust-cm
 data:
-  ATTACKED_HOST: http://vip-planespotter-web.planespotter-tiny:80
+  ATTACKED_HOST: http://ps-ingress.tkg.lab04:80
