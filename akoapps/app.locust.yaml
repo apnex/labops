@@ -12,7 +12,7 @@ spec:
     repoURL: 'https://github.com/apnex/labops'
     targetRevision: HEAD
   destination:
-    name: cluster-tenant1
+    server: 'https://kubernetes.default.svc'
     namespace: locust
   syncPolicy:
     syncOptions:
