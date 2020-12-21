@@ -19,6 +19,26 @@
 					]
 				}
 			]
+		},
+		{
+			"id": "urn:uuid:1e07e0bf-1204-4f2d-b45b-2aa5b4749afc",
+			"version": "2",
+			"type": "vcsp.iso",
+			"name": "alpine.iso",
+			"created": "2020-11-21T13:52Z",
+			"description": "",
+			"properties": {},
+			"selfHref": "library/items.json",
+			"files": [
+				{
+					"name": "alpine.iso",
+					"size": 2097152,
+					"etag": "9da5d36a405f4b905f1b569508dd8cd8",
+					"hrefs": [
+						"library/alpine.iso"
+					]
+				}
+			]
 		}
 	]
 }
