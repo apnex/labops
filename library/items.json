@@ -25,15 +25,15 @@
 			"version": "2",
 			"type": "vcsp.iso",
 			"name": "alpine.iso",
-			"created": "2020-11-21T13:52Z",
+			"created": "2020-11-21T14:52Z",
 			"description": "",
 			"properties": {},
 			"selfHref": "library/items.json",
 			"files": [
 				{
 					"name": "alpine.iso",
-					"size": 2097152,
-					"etag": "9da5d36a405f4b905f1b569508dd8cd8",
+					"size": 1048576,
+					"etag": "5c5e99a36187858828ab1acd95eceb59",
 					"hrefs": [
 						"library/alpine.iso"
 					]
