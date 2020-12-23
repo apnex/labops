@@ -44,18 +44,18 @@
 			"id": "urn:uuid:2e07e0bf-1204-4f2d-b45b-2aa5b4749afc",
 			"version": "2",
 			"type": "vcsp.iso",
-			"name": "netboot.iso",
+			"name": "netboot.xyz.iso",
 			"created": "2020-11-21T14:53Z",
 			"description": "",
 			"properties": {},
 			"selfHref": "library/items.json",
 			"files": [
 				{
-					"name": "netboot.iso",
+					"name": "netboot.xyz.iso",
 					"size": 1048576,
-					"etag": "881692c602fe6009e342c57db0387fab",
+					"etag": "86d773a721d4fe95a728af06e9e540b1",
 					"hrefs": [
-						"library/netboot.iso"
+						"library/netboot.xyz.iso"
 					]
 				}
 			]
