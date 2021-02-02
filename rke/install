@@ -41,7 +41,7 @@ sleep 1
 cat << EOF > /root/rke.config.yaml
 ignore_docker_version: true
 nodes:
-  - address: localhost
+  - address: $(hostname)
     user: rke
     role:
       - controlplane

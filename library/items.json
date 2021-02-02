@@ -52,7 +52,7 @@
 			"files": [
 				{
 					"name": "netboot.xyz.iso",
-					"size": 1048576,
+					"size": 884736,
 					"etag": "86d773a721d4fe95a728af06e9e540b1",
 					"hrefs": [
 						"library/netboot.xyz.iso"
