@@ -21,6 +21,26 @@
 			]
 		},
 		{
+			"id": "urn:uuid:1a97e0cf-1204-4f2d-b45b-2aa5b4749afc",
+			"version": "2",
+			"type": "vcsp.iso",
+			"name": "esx.iso",
+			"created": "2021-02-17T13:52Z",
+			"description": "",
+			"properties": {},
+			"selfHref": "library/items.json",
+			"files": [
+				{
+					"name": "esx.iso",
+					"size": 1048576,
+					"etag": "61522330f624e077f6f5b503a5ef3025",
+					"hrefs": [
+						"library/esx.iso"
+					]
+				}
+			]
+		},
+		{
 			"id": "urn:uuid:1e07e0bf-1204-4f2d-b45b-2aa5b4749afc",
 			"version": "2",
 			"type": "vcsp.iso",
