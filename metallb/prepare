@@ -9,9 +9,9 @@ while [[ -z ${HEALTHY} ]]; do
 done
 echo "socket [ localhost:6443 ] api [ healthy ]"
 
-## determine IPADDRESS of default route interface
+## determine IPV4 ADDRESS of default route interface
 ETH=$(route | grep ^default | sed "s/.* //")
-IPADDRESS=$(ip addr show "${ETH}" | grep inet | awk '{print $2}' | cut -d/ -f1)
+IPADDRESS=$(ip addr show "${ETH}" | grep inet\ | awk '{print $2}' | cut -d/ -f1)
 
 read -r -d '' METALPOOL <<EOF
 apiVersion: v1
