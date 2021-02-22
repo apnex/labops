@@ -36,12 +36,13 @@ curl -Lo /usr/bin/kubectl "https://storage.googleapis.com/kubernetes-release/rel
 chmod +x /usr/bin/kubectl
 kubectl version --client
 
+#  - address: $(hostname)
 echo "### initialise rke cluster ###"
 sleep 1
 cat << EOF > /root/rke.config.yaml
 ignore_docker_version: true
 nodes:
-  - address: $(hostname)
+  - address: localhost
     user: rke
     role:
       - controlplane
