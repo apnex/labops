@@ -21,6 +21,66 @@
 			]
 		},
 		{
+			"id": "urn:uuid:2dede0bf-1204-4f2d-b45b-2aa5b4749afc",
+			"version": "2",
+			"type": "vcsp.iso",
+			"name": "labops.centos.stage1.iso",
+			"created": "2020-11-17T13:52Z",
+			"description": "",
+			"properties": {},
+			"selfHref": "library/items.json",
+			"files": [
+				{
+					"name": "labops.centos.stage1.iso",
+					"size": 1048576,
+					"etag": "37f944640081363314bd9083181376ba",
+					"hrefs": [
+						"library/labops.centos.stage1.iso"
+					]
+				}
+			]
+		},
+		{
+			"id": "urn:uuid:2aede0bf-1204-4f2d-b45b-2aa5b4749afc",
+			"version": "2",
+			"type": "vcsp.iso",
+			"name": "labops.centos.stage2.iso",
+			"created": "2020-11-17T13:52Z",
+			"description": "",
+			"properties": {},
+			"selfHref": "library/items.json",
+			"files": [
+				{
+					"name": "labops.centos.stage2.iso",
+					"size": 1048576,
+					"etag": "392b94605d676843c6f2f46e42a0b997",
+					"hrefs": [
+						"library/labops.centos.stage2.iso"
+					]
+				}
+			]
+		},
+		{
+			"id": "urn:uuid:1aede05f-1204-4f2d-b45b-2aa5b4749afc",
+			"version": "2",
+			"type": "vcsp.iso",
+			"name": "labops.centos.stage3.iso",
+			"created": "2020-11-17T13:52Z",
+			"description": "",
+			"properties": {},
+			"selfHref": "library/items.json",
+			"files": [
+				{
+					"name": "labops.centos.stage3.iso",
+					"size": 1048576,
+					"etag": "1a3371eea05b9da228be0ffc14628a1d",
+					"hrefs": [
+						"library/labops.centos.stage3.iso"
+					]
+				}
+			]
+		},
+		{
 			"id": "urn:uuid:1a97e0cf-1204-4f2d-b45b-2aa5b4749afc",
 			"version": "2",
 			"type": "vcsp.iso",
