@@ -14,6 +14,7 @@ if [[ -e /tmp/runonce ]]; then
 	curl -fsSL http://labops.sh/metallb/install | sh
 	curl -fsSL http://labops.sh/metallb/prepare | sh
 	echo "[[[ Completed Evolution: Stage 3 ]]]"
+	echo "1" > /root/startup.done
 fi
 
 exit

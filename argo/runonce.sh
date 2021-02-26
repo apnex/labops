@@ -19,6 +19,7 @@ if [[ -e /tmp/runonce ]]; then
 	curl -fsSL http://labops.sh/argo/set-password | sh
 	curl -fsSL http://labops.sh/argo/set-service | sh
 	echo "[[[ Completed Evolution: Stage 4 ]]]"
+	echo "1" > /root/startup.done
 fi
 
 exit
