@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    role: locust-master
+  name: locust-master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      role: locust-master
+  template:
+    metadata:
+      labels:
+        role: locust-master
+    spec:
+      containers:
+      - image: apnex/locust:latest
+        imagePullPolicy: IfNotPresent
+        name: locust-master
+        env:
+          - name: ATTACKED_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: locust-cm
+                key: ATTACKED_HOST
+          - name: LOCUST_MODE
+            value: MASTER
+          - name: LOCUST_OPTS
+            value: --print-stats --web-host=0.0.0.0
+        volumeMounts:
+          - mountPath: /locust
+            name: locust-scripts
+        ports:
+        - containerPort: 5557
+          name: comm
+        - containerPort: 5558
+          name: comm-plus-1
+        - containerPort: 8089
+          name: web-ui
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: locust-scripts
+        configMap:
+          name: scripts-cm
