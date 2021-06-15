@@ -1,0 +1,23 @@
+#!/bin/bash
+
+## login interactively
+docker login
+
+echo "Create new secret [ docker-login ] with credentials at [ /root/.docker/config.json ]"
+## perform kubectl healthcheck
+## perform a check if config.json exists
+kubectl create secret generic docker-login \
+	--from-file=.dockerconfigjson=/root/.docker/config.json \
+	--type=kubernetes.io/dockerconfigjson
+
+echo "Updated serviceaccount [ default ] for namespace [ default ] to use [ docker-login ]"
+kubectl patch serviceaccount default \
+-p '{
+	"imagePullSecrets": [
+		{
+			"name": "docker-login"
+		}
+	]
+}'
+
+## delete all failed pods in default namespace?

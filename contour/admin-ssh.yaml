@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vip-admin-ssh
+  annotations:
+    metallb.universe.tf/allow-shared-ip: host
+spec:
+  ports:
+    - port: 8022
+      targetPort: 22
+      protocol: TCP
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: vip-admin-ssh
+subsets:
+  - addresses:
+      - ip: 172.16.10.5
+    ports:
+      - port: 22
