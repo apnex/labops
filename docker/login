@@ -1,5 +1,9 @@
 #!/bin/bash
 
+### references
+#https://medium.com/titansoft-engineering/kubernetes-cluster-wide-access-to-private-container-registry-with-imagepullsecret-patcher-b8b8fb79f7e5
+#https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials
+
 ## login interactively
 docker login
 
