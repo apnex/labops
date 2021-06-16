@@ -1,0 +1,4 @@
+#!/bin/bash
+
+#https://projectcontour.io/guides/gateway-api/
+kubectl apply -f https://projectcontour.io/quickstart/operator.yaml
