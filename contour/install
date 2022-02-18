@@ -2,3 +2,7 @@
 
 #https://projectcontour.io/guides/gateway-api/
 kubectl apply -f https://projectcontour.io/quickstart/operator.yaml
+
+## updated services object for metallb
+kubectl -n projectcontour delete services envoy
+kubectl -n projectcontour apply -f envoy.yaml
