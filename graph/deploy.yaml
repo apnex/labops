@@ -1,0 +1,41 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: graph-admin
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: default
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: graph-server
+  labels:
+    app: graph-server
+spec:
+  hostNetwork: false
+  containers:
+  - name: client
+    image: australia-southeast1-docker.pkg.dev/labops/apnex/graph-client
+    command: ["/root/start.sh"]
+  - name: server
+    image: australia-southeast1-docker.pkg.dev/labops/apnex/graph-server
+    command: ["/root/start.sh"]
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: svc-graph-server
+spec:
+  type: LoadBalancer
+  selector:
+    app: graph-server
+  ports:
+  - port: 80
+    name: client
+  - port: 8081
+    name: server
