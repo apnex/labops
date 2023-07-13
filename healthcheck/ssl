@@ -2,18 +2,23 @@
 
 ## defaults
 if [[ -n $1 ]]; then
-	ENDPOINT=$1
-fi
-if [[ -n $2 ]]; then
-	PORT=$2
-fi
-if [[ -z $PORT ]]; then
-	PORT="443"
+	HOST=$1
 fi
 
-## thumbprint
+function getSocket {
+	HOST=$1
+	if [[ "$HOST" =~ ^(.+):([0-9]+)$ ]]; then
+		NODE="${BASH_REMATCH[1]}"
+		PORT="${BASH_REMATCH[2]}"
+	else
+		NODE="${HOST}"
+		PORT="443"
+	fi
+	printf "%s" "${NODE}:${PORT}"
+}
+
 function getThumbprint {
-	local PAYLOAD=$(echo -n | timeout 3 openssl s_client -connect "${ENDPOINT}:${PORT}" 2>/dev/null)
+	local PAYLOAD=$(echo -n | timeout 3 openssl s_client -connect "${ENDPOINT}" 2>/dev/null)
 	local PRINT=$(echo "$PAYLOAD" | openssl x509 -noout -fingerprint -sha256 2>/dev/null)
 	local REGEX='^(.*)=(([0-9A-Fa-f]{2}[:])+([0-9A-Fa-f]{2}))$'
 	if [[ $PRINT =~ $REGEX ]]; then
@@ -23,19 +28,20 @@ function getThumbprint {
 	printf "%s" "${CODE}"
 }
 
-## run
-if [[ -n $ENDPOINT ]]; then
+if [[ -n $HOST ]]; then
 	ALIVE=0
+	ENDPOINT=$(getSocket "$HOST")
 	while [[ $ALIVE == 0 ]]; do
-		THUMBPRINT=$(getThumbprint "$ENDPOINT")
+		THUMBPRINT=$(getThumbprint)
+		#THUMBPRINT=$(getThumbprint "$ENDPOINT")
 		if [[ -n $THUMBPRINT ]]; then
 			ALIVE=1
 		else
-			printf "%s\n" "[ SSL ] ENDPOINT [ $ENDPOINT:$PORT ] waiting for response.. sleep 10"
+			printf "%s\n" "[ SSL ] ENDPOINT [ $ENDPOINT ] waiting for response.. sleep 10"
 			sleep 10
 		fi
 	done
-	printf "%s\n" "[ SSL ] ENDPOINT [ $ENDPOINT:$PORT ] is ALIVE !!! THUMBPRINT [ $THUMBPRINT ]" 1>&2
+	printf "%s\n" "[ SSL ] ENDPOINT [ $ENDPOINT ] is ALIVE !!! THUMBPRINT [ $THUMBPRINT ]" 1>&2
 else
-	printf "%s\n" "[ SSL ] ERROR: No ENDPOINT defined" 1>&2	
+	printf "%s\n" "[ SSL ] ERROR: No HOST defined" 1>&2
 fi
