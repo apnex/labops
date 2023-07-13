@@ -1,7 +1,10 @@
 #!/bin/bash
 
 ## probably should use argocd CLI to remove apps instead of tearing them out of namespace
-## clear finalizers and delete namespace
+## remove index first
+kubectl -n argocd delete app index
+
+## clear finalizers and remove remaining apps
 APPS=$(kubectl -n argocd get applications -o json)
 IFS=$'\n'
 for APP in $(echo "${APPS}" | jq -c '.items[]'); do
@@ -10,6 +13,8 @@ for APP in $(echo "${APPS}" | jq -c '.items[]'); do
 	echo "${APP}" | jq '.metadata.finalizers = []' | kubectl replace -f -
 	kubectl -n argocd delete app "${NAME}"
 done
+
+## delete namespace
 kubectl delete ns argocd
 
 ## remove argocd cli
