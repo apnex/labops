@@ -1,11 +1,17 @@
 #!/bin/sh
 
-ENDPOINT=$1
-PORT=$2
+## defaults
+if [[ -n $1 ]]; then
+	ENDPOINT=$1
+fi
+if [[ -n $2 ]]; then
+	PORT=$2
+fi
 if [[ -z $PORT ]]; then
 	PORT="443"
 fi
 
+## thumbprint
 function getThumbprint {
 	local PAYLOAD=$(echo -n | timeout 3 openssl s_client -connect "${ENDPOINT}:${PORT}" 2>/dev/null)
 	local PRINT=$(echo "$PAYLOAD" | openssl x509 -noout -fingerprint -sha256 2>/dev/null)
@@ -17,6 +23,7 @@ function getThumbprint {
 	printf "%s" "${CODE}"
 }
 
+## run
 if [[ -n $ENDPOINT ]]; then
 	ALIVE=0
 	while [[ $ALIVE == 0 ]]; do
