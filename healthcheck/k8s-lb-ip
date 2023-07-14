@@ -1,0 +1,8 @@
+#!/bin/bash
+EXTERNAL_IP=""
+while [ -z $EXTERNAL_IP ]; do
+	echo "Waiting for end point..."
+	EXTERNAL_IP=$(kubectl get svc ${1} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+	[ -z "$EXTERNAL_IP" ] && sleep 10
+done
+echo 'End point ready:' && echo $EXTERNAL_IP
