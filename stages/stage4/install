@@ -1,0 +1,6 @@
+#!/bin/bash
+
+curl -fsSL http://labops.sh/argo/install | sh
+curl -fsSL http://labops.sh/argo/set-service | sh
+curl -fsSL http://labops.sh/argo/cli-install | sh
+curl -fsSL http://labops.sh/argo/set-password | sh
