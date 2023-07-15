@@ -1,10 +1,10 @@
 #!/bin/bash
 
 ## healthcheck argo vip is ready
-ARGOCD_SERVER=$(curl -fsSL https://labops.sh/healthchecks/k8s-external-ip | SERVICE="vip-argocd-server" NAMESPACE="argocd" sh -- 2>/dev/tty)
+ARGOCD_SERVER=$(curl -fsSL https://labops.sh/healthcheck/k8s-external-ip | SERVICE="vip-argocd-server" NAMESPACE="argocd" sh -- 2>/dev/tty)
 
 ## healthcheck ssl
-ARGOCD_THUMBPRINT=$(curl -fsSL https://labops.sh/healthchecks/net-ssl | HOST="${ARGOCD_SERVER}" sh -- 2>/dev/tty)
+ARGOCD_THUMBPRINT=$(curl -fsSL https://labops.sh/healthcheck/net-ssl | HOST="${ARGOCD_SERVER}" sh -- 2>/dev/tty)
 
 ## get cli
 curl -ksLo /usr/bin/argocd https://${ARGOCD_SERVER}/download/argocd-linux-amd64
