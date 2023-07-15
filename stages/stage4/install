@@ -1,6 +1,6 @@
 #!/bin/bash
+# https://argoproj.github.io/argo-cd/getting_started/
 
-curl -fsSL http://labops.sh/argo/install | sh
-curl -fsSL http://labops.sh/argo/set-service | sh
-curl -fsSL http://labops.sh/argo/cli-install | sh
-curl -fsSL http://labops.sh/argo/set-password | sh
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd -f https://labops.sh/argo/app.index.yaml

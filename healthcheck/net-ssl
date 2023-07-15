@@ -1,0 +1,48 @@
+#!/bin/sh
+
+## defaults
+if [[ -n $1 ]]; then
+	HOST=$1
+fi
+
+function getSocket {
+	HOST=$1
+	if [[ "$HOST" =~ ^([^:]+):([0-9]+)$ ]]; then
+		NODE="${BASH_REMATCH[1]}"
+		PORT="${BASH_REMATCH[2]}"
+	else
+		NODE="${HOST}"
+		PORT="443"
+	fi
+	printf "%s" "${NODE}:${PORT}"
+}
+
+function getThumbprint {
+	local PAYLOAD=$(echo -n | timeout 3 openssl s_client -connect "${ENDPOINT}" 2>/dev/null)
+	local PRINT=$(echo "$PAYLOAD" | openssl x509 -noout -fingerprint -sha256 2>/dev/null)
+	local REGEX='^(.*)=(([0-9A-Fa-f]{2}[:])+([0-9A-Fa-f]{2}))$'
+	if [[ $PRINT =~ $REGEX ]]; then
+		local TYPE=${BASH_REMATCH[1]}
+		local CODE=${BASH_REMATCH[2]}
+	fi
+	printf "%s" "${CODE}"
+}
+
+if [[ -n $HOST ]]; then
+	ALIVE=0
+	ENDPOINT=$(getSocket "$HOST")
+	while [[ $ALIVE == 0 ]]; do
+		THUMBPRINT=$(getThumbprint)
+		#THUMBPRINT=$(getThumbprint "$ENDPOINT")
+		if [[ -n $THUMBPRINT ]]; then
+			ALIVE=1
+		else
+			printf "%s\n" "[ NET/SSL ] ENDPOINT [ $ENDPOINT ] waiting for response.. sleep 10" 1>&2
+			sleep 10
+		fi
+	done
+	printf "%s\n" "[ NET/SSL ] ENDPOINT [ $ENDPOINT ] is ALIVE !! THUMBPRINT [ $THUMBPRINT ]" 1>&2
+	printf "%s" "${THUMBPRINT}"
+else
+	printf "%s\n" "[ NET/SSL ] ERROR: No HOST defined" 1>&2
+fi

@@ -1,0 +1,47 @@
+#!/bin/bash
+# for a given svc, checks that an external-ip has been allocated with Type=LoadBalancer
+# returns [ external-ip:port ] of svc
+
+## defaults
+if [[ -n $1 ]]; then
+	SERVICE=$1
+fi
+if [[ -n $2 ]]; then
+	NAMESPACE=$2
+fi
+
+function getSvcSocket {
+	read -r -d '' FILTER <<-'EOF'
+		def extIP:
+			if (.spec.externalIPs | length) != 0 then
+				.spec.externalIPs[0]
+			else
+				.status.loadBalancer.ingress[0].ip
+			end
+		;
+		extIP as $IP
+		| $IP + ":" + (.spec.ports[0].port | tostring)
+	EOF
+	local SVC_SOCKET=$(kubectl -n ${NAMESPACE} get svc ${SERVICE} -o json | jq -r "${FILTER}")
+	printf "%s" "${SVC_SOCKET}"
+}
+
+if [[ -n ${SERVICE} ]]; then
+	if [[ -z ${NAMESPACE} ]]; then
+		NAMESPACE="default"
+	fi
+	ALIVE=0
+	while [[ $ALIVE == 0 ]]; do
+		SOCKET=$(getSvcSocket "${SERVICE}" "${NAMESPACE}")
+		if [[ -n ${SOCKET} ]]; then
+			ALIVE=1
+		else
+			printf "%s\n" "[ K8S/EXTERNAL-IP ] SERVICE [ ${NAMESPACE}/${SERVICE} ] waiting for response.. sleep 10" 1>&2
+			sleep 10
+		fi
+	done
+	printf "%s\n" "[ K8S/EXTERNAL-IP ] SERVICE [ ${NAMESPACE}/${SERVICE} ] is ALIVE !! SOCKET [ ${SOCKET} ]" 1>&2
+	printf "%s" "${SOCKET}"
+else
+	printf "%s\n" "[ K8S/EXTERNAL-IP ] ERROR: No SERVICE defined" 1>&2
+fi
