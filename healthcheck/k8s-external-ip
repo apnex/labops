@@ -10,7 +10,7 @@ if [[ -n $2 ]]; then
 	NAMESPACE=$2
 fi
 
-function getSvcSocket {
+function getSvcIp {
 	read -r -d '' FILTER <<-'EOF'
 		def extIP:
 			if (.spec.externalIPs | length) != 0 then
@@ -20,10 +20,24 @@ function getSvcSocket {
 			end
 		;
 		extIP as $IP
-		| $IP + ":" + (.spec.ports[0].port | tostring)
+		| $IP // empty
 	EOF
-	local SVC_SOCKET=$(kubectl -n ${NAMESPACE} get svc ${SERVICE} -o json | jq -r "${FILTER}")
-	printf "%s" "${SVC_SOCKET}"
+	local SVC_IP=$(echo ${SVC_JSON} | jq -r "${FILTER}")
+	printf "%s" "${SVC_IP}"
+}
+
+function getSvcSocket {
+	local SVC_JSON=$(kubectl -n ${NAMESPACE} get svc ${SERVICE} -o json)
+	local SVC_IP=$(getSvcIp)
+	if [[ -n ${SVC_IP} ]]; then
+		read -r -d '' FILTER <<-'EOF'
+			.spec.ports[0].port | tostring
+		EOF
+		local SVC_PORT=$(echo ${SVC_JSON} | jq -r "${FILTER}")
+		printf "%s" "${SVC_IP}:${SVC_PORT}"
+	else
+		printf "%s" ""
+	fi
 }
 
 if [[ -n ${SERVICE} ]]; then
@@ -36,11 +50,11 @@ if [[ -n ${SERVICE} ]]; then
 		if [[ -n ${SOCKET} ]]; then
 			ALIVE=1
 		else
-			printf "%s\n" "[ K8S/EXTERNAL-IP ] SERVICE [ ${NAMESPACE}/${SERVICE} ] waiting for response.. sleep 10" 1>&2
+			printf "%s\n" "[ K8S/EXTERNAL-IP ] SERVICE [ ${NAMESPACE}/${SERVICE} ] waiting for EXTERNAL-IP.. sleep 10" 1>&2
 			sleep 10
 		fi
 	done
-	printf "%s\n" "[ K8S/EXTERNAL-IP ] SERVICE [ ${NAMESPACE}/${SERVICE} ] is ALIVE !! SOCKET [ ${SOCKET} ]" 1>&2
+	printf "%s\n" "[ K8S/EXTERNAL-IP ] SERVICE [ ${NAMESPACE}/${SERVICE} ] is ALIVE !! EXTERNAL-IP [ ${SOCKET} ]" 1>&2
 	printf "%s" "${SOCKET}"
 else
 	printf "%s\n" "[ K8S/EXTERNAL-IP ] ERROR: No SERVICE defined" 1>&2
