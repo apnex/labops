@@ -49,10 +49,10 @@ if [[ -n ${RESOURCE} ]]; then
 			TARGET="0"
 		fi
 
-		printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TA
-RGET} ] waiting for RESOURCE.. sleep 10" 1>&2
+		printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TARGET} ] waiting for RESOURCE.. sleep 10" 1>&2
 		sleep 1
 	done
+	printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TARGET} ] is ALIVE !!" 1>&2
 else
 	printf "%s\n" "[ K8S/DEPLOYMENT-READY ] ERROR: No DEPLOYMENT defined" 1>&2
 fi
