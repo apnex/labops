@@ -8,11 +8,11 @@ chmod 700 /home/rke/.ssh
 chmod -R go= /home/rke/.ssh
 
 echo "### create and copy ssh keys for rke user ###"
+sleep 1
 HOME=/root
 cd ${HOME}
 echo "HOME [$HOME]"
 echo "PWD [$PWD]"
-sleep 1
 (cat /dev/zero | ssh-keygen -q -N "") 1>/dev/null 2>/dev/null
 echo "SSH-KEYGEN FINISHED"
 cat /root/.ssh/id_rsa.pub
@@ -24,7 +24,7 @@ EOT
 
 echo "### install rke cli ###"
 sleep 1
-curl -Lo /usr/bin/rke https://github.com/rancher/rke/releases/download/v1.2.8/rke_linux-amd64
+curl -Lo /usr/bin/rke https://github.com/rancher/rke/releases/download/v1.4.7/rke_linux-amd64
 #https://github.com/rancher/rke/releases/latest
 chmod +x /usr/bin/rke
 rke --version
@@ -42,7 +42,7 @@ sleep 1
 cat << EOF > /root/rke.config.yaml
 ignore_docker_version: true
 nodes:
-  - address: localhost
+  - address: 127.0.0.1
     user: rke
     role:
       - controlplane
