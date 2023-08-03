@@ -9,27 +9,25 @@ while [[ -z ${HEALTHY} ]]; do
 done
 echo "socket [ localhost:6443 ] api [ healthy ]"
 
+## healthcheck
+METAL_CONTROLLER=$(curl -fsSL https://labops.sh/healthcheck/k8s-deployment-ready | RESOURCE="controller" NAMESPACE="metallb-system" bash -- 2>/dev/tty)
+
 ## determine IPV4 ADDRESS of default route interface
 ETH=$(route | grep ^default | sed "s/.* //")
 IPADDRESS=$(ip addr show "${ETH}" | grep inet\ | awk '{print $2}' | cut -d/ -f1)
 
 read -r -d '' METALPOOL <<EOF
-apiVersion: v1
-kind: ConfigMap
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
 metadata:
+  name: host-pool
   namespace: metallb-system
-  name: config
-data:
-  config: |
-    address-pools:
-    - name: default
-      protocol: layer2
-      addresses:
-      - ${IPADDRESS}/32
+spec:
+  addresses:
+  - ${IPADDRESS}/32
 EOF
 
 echo "${METALPOOL}"
 
-## apply and restart metallb pods to force update existing service IPs
+## apply IPAddressPool
 printf "${METALPOOL}" | kubectl apply -f -
-kubectl -n metallb-system delete pods --all
