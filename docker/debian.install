@@ -1,0 +1,7 @@
+#!/bin/bash
+
+## remove existing packages
+for PKG in docker.io docker-doc docker-compose podman-docker containerd runc; do
+	sudo apt-get remove $PKG
+done
+

@@ -1,0 +1,58 @@
+#!/bin/bash
+# for a given deployment, checks that all replicas are in READY state
+# returns null
+
+## defaults
+if [[ -n $1 ]]; then
+	RESOURCE=$1
+fi
+if [[ -n $2 ]]; then
+	NAMESPACE=$2
+fi
+
+function getDeploymentReady {
+	local JSON=$(kubectl -n ${NAMESPACE} get deployment ${RESOURCE} -o json)
+	read -r -d '' FILTER1 <<-'EOF'
+		.status.readyReplicas // empty
+	EOF
+	local READYREPLICAS=$(echo ${JSON} | jq -r "${FILTER1}")
+	read -r -d '' FILTER2 <<-'EOF'
+		.status.replicas // empty
+	EOF
+	local REPLICAS=$(echo ${JSON} | jq -r "${FILTER2}")
+	local STATUS="${READYREPLICAS} ${REPLICAS}"
+
+	# print X Y
+	printf "%s" "${STATUS}"
+}
+
+if [[ -n ${RESOURCE} ]]; then
+	ALIVE=0
+	while [[ $ALIVE == 0 ]]; do
+		STATUS=$(getDeploymentReady "${RESOURCE}" "${NAMESPACE}")
+		ARRSTATUS=(${STATUS})
+
+		## check alive
+		if [[ -n ${ARRSTATUS[0]} && -n ${ARRSTATUS[1]} ]]; then
+			if [[ ${ARRSTATUS[0]} -eq ${ARRSTATUS[1]} ]]; then
+				ALIVE=1
+			fi
+		fi
+
+		## format string
+		READY=${ARRSTATUS[1]}
+		if [[ -z ${READY} ]]; then
+			READY="0"
+		fi
+		TARGET=${ARRSTATUS[0]}
+		if [[ ! -n ${TARGET} ]]; then
+			TARGET="0"
+		fi
+
+		printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TA
+RGET} ] waiting for RESOURCE.. sleep 10" 1>&2
+		sleep 1
+	done
+else
+	printf "%s\n" "[ K8S/DEPLOYMENT-READY ] ERROR: No DEPLOYMENT defined" 1>&2
+fi
