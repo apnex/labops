@@ -11,5 +11,10 @@ curl -fsSL https://get.k3s.io | sh -s - --disable=servicelb --disable=traefik
 systemctl status k3s
 
 ## kubectl
+sleep 3
 kubectl get nodes
 kubectl get pods -A
+
+## set KUBECONFIG
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+echo "KUBECONFIG set to [ ${KUBECONFIG} ]"
