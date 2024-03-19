@@ -10,7 +10,7 @@ done
 echo "socket [ localhost:6443 ] api [ healthy ]"
 
 ## healthcheck
-METAL_CONTROLLER=$(curl -fsSL https://labops.sh/healthcheck/k8s-deployment-ready | RESOURCE="controller" NAMESPACE="metallb-system" bash -- 2>/dev/tty)
+METAL_CONTROLLER=$(curl -fsSL https://labops.sh/healthcheck/k8s-deployment-ready | RESOURCE="controller" NAMESPACE="metallb-system" bash -- 2>/dev/stderr)
 
 ## determine IPV4 ADDRESS of default route interface
 ETH=$(route | grep ^default | sed "s/.* //")
