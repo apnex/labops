@@ -18,4 +18,4 @@ cp /etc/rancher/k3s/k3s.yaml /root/.kube/config
 ## kubectl
 sleep 3
 kubectl get nodes
-kubectl get pods -A
+#kubectl get pods -A
