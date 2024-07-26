@@ -17,6 +17,7 @@ done
 echo "kubeconfig [ /etc/rancher/k3s/k3s.yaml ] exists!"
 mkdir -p /root/.kube
 cp /etc/rancher/k3s/k3s.yaml /root/.kube/config
+cat /root/.kube/config
 
 ## kubectl
 sleep 3
