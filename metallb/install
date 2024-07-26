@@ -6,7 +6,7 @@ while [[ -z ${HEALTHY} ]]; do
 	echo "socket [ localhost:6443 ] api [ no response ]"
 	sleep 10
 	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-	echo "test"
+	echo "test [${HEALTHY}]"
 done
 echo "socket [ localhost:6443 ] api [ healthy ]"
 
