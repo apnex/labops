@@ -9,9 +9,8 @@ echo "[[[ Completed Evolution: Stage 2 ]]]"
 
 ## Stage 3
 export KUBECONFIG=/root/.kube/config
-cat /root/.kube/config
-#curl -fsSL http://labops.sh/metallb/install | sh
-#curl -fsSL http://labops.sh/metallb/prepare | sh
+curl -fsSL http://labops.sh/metallb/install | sh
+curl -fsSL http://labops.sh/metallb/prepare | sh
 echo "[[[ Completed Evolution: Stage 3 ]]]"
 
 ## Done
