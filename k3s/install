@@ -5,14 +5,12 @@
 #export INSTALL_K3S_EXEC=" --no-deploy servicelb --no-deploy traefik"
 
 ## install k3s
-curl -fsSL https://get.k3s.io | sh -s - --disable=servicelb --disable=traefik
-
-## verify status
-systemctl status k3s
+export INSTALL_K3S_VERSION="v1.30.2+k3s2"
+curl -fsSL https://get.k3s.io | sh -s - --disable=servicelb,traefik
 
 ## kubeconfig
 echo "### sync kubeconfig ###"
-sleep 1
+sleep 10 # wait for file to exist
 mkdir -p /root/.kube
 cp /etc/rancher/k3s/k3s.yaml /root/.kube/config
 
