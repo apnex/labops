@@ -10,14 +10,13 @@ curl -fsSL https://get.k3s.io | sh -s - --disable=servicelb,traefik
 
 ## kubeconfig
 echo "### sync kubeconfig ###"
-while [ -f /etc/rancher/k3s/k3s.yaml ]; do
+while [ ! -f /etc/rancher/k3s/k3s.yaml ]; do
 	echo "kubeconfig [ /etc/rancher/k3s/k3s.yaml ] not exist yet"
 	sleep 3
 done
 echo "kubeconfig [ /etc/rancher/k3s/k3s.yaml ] exists!"
 mkdir -p /root/.kube
 cp /etc/rancher/k3s/k3s.yaml /root/.kube/config
-cat /root/.kube/config
 
 ## kubectl
 sleep 3
