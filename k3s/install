@@ -4,6 +4,9 @@
 #export K3S_KUBECONFIG_MODE="644"
 #export INSTALL_K3S_EXEC=" --no-deploy servicelb --no-deploy traefik"
 
+echo "WHOAMI??"
+whoami
+
 ## install k3s
 export INSTALL_K3S_CHANNEL_URL="https://update.k3s.io/v1-release/channels"
 export INSTALL_K3S_CHANNEL="latest"
