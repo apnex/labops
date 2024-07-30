@@ -2,7 +2,8 @@
 
 ## install k3s
 export INSTALL_K3S_CHANNEL_URL="https://update.k3s.io/v1-release/channels"
-export INSTALL_K3S_CHANNEL="latest"
+#export INSTALL_K3S_CHANNEL="latest"
+export INSTALL_K3S_CHANNEL="stable"
 curl -fsSL https://get.k3s.io | sh -s - --disable=servicelb,traefik
 
 ## kubeconfig
