@@ -2,7 +2,7 @@
 ## kubectl healthcheck
 echo "[[ ${KUBECONFIG} ]]"
 HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-while [[ -z ${HEALTHY} ]]; do
+while [[ -z "${HEALTHY}" ]]; do
 	echo "socket [ localhost:6443 ] api [ no response ]"
 	sleep 10
 	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
