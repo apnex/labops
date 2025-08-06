@@ -1,0 +1,43 @@
+#!/bin/bash
+
+## defaults
+if [[ -n $1 ]]; then
+	HOST=$1
+fi
+
+function getSocket {
+	HOST=$1
+	if [[ "$HOST" =~ ^([^:]+):([0-9]+)$ ]]; then
+		NODE="${BASH_REMATCH[1]}"
+		PORT="${BASH_REMATCH[2]}"
+	else
+		NODE="${HOST}"
+		PORT="443"
+	fi
+	printf "%s" "${NODE}:${PORT}"
+}
+
+function getCert {
+	local CERT=$(echo | openssl s_client -showcerts -servername ${ENDPOINT} -connect "${ENDPOINT}:443" 2>&1 \
+		| sed --quiet '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p')
+	printf "%s" "${CERT}"
+}
+
+if [[ -n $HOST ]]; then
+	ALIVE=0
+	#ENDPOINT=$(getSocket "$HOST")
+	ENDPOINT="${HOST}"
+	while [[ $ALIVE == 0 ]]; do
+		CERT=$(getCert)
+		if [[ -n ${CERT} ]]; then
+			ALIVE=1
+		else
+			printf "%s\n" "[ SSL/CERT ] ENDPOINT [ ${ENDPOINT} ] waiting for response.. sleep 10" 1>&2
+			sleep 10
+		fi
+	done
+	printf "%s\n" "[ SSL/CERT ] ENDPOINT [ ${ENDPOINT} ] is ALIVE !! Obtained CERT" 1>&2
+	printf "%s" "${CERT}"
+else
+	printf "%s\n" "[ SSL/CERT ] ERROR: No HOST defined" 1>&2
+fi

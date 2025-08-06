@@ -3,6 +3,7 @@
 # returns null
 
 ## defaults
+VAR_SLEEP=5
 if [[ -n $1 ]]; then
 	RESOURCE=$1
 fi
@@ -29,28 +30,27 @@ function getDeploymentReady {
 if [[ -n ${RESOURCE} ]]; then
 	ALIVE=0
 	while [[ $ALIVE == 0 ]]; do
-		STATUS=$(getDeploymentReady "${RESOURCE}" "${NAMESPACE}")
-		ARRSTATUS=(${STATUS})
+		ARRSTATUS=($(getDeploymentReady "${RESOURCE}" "${NAMESPACE}"))
+		READY=${ARRSTATUS[1]}
+		TARGET=${ARRSTATUS[0]}
 
 		## check alive
-		if [[ -n ${ARRSTATUS[0]} && -n ${ARRSTATUS[1]} ]]; then
-			if [[ ${ARRSTATUS[0]} -eq ${ARRSTATUS[1]} ]]; then
+		if [[ -n ${READY} && -n ${TARGET} ]]; then
+			if [[ ${READY} -eq ${TARGET} ]]; then
 				ALIVE=1
+				break
 			fi
 		fi
 
-		## format string
-		READY=${ARRSTATUS[1]}
+		## normalise values
 		if [[ -z ${READY} ]]; then
 			READY="0"
 		fi
-		TARGET=${ARRSTATUS[0]}
-		if [[ ! -n ${TARGET} ]]; then
+		if [[ -z ${TARGET} ]]; then
 			TARGET="0"
 		fi
-
-		printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TARGET} ] waiting for RESOURCE.. sleep 1" 1>&2
-		sleep 1
+		printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TARGET} ] waiting for RESOURCE.. sleep ${VAR_SLEEP}" 1>&2
+		sleep ${VAR_SLEEP}
 	done
 	printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TARGET} ] is ALIVE !!" 1>&2
 else
