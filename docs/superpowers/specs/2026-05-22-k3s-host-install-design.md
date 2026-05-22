@@ -309,8 +309,9 @@ Every new/edited module begins with a standard header:
   elapsed wait exceeds it. `k3s/up` sets `WAIT_TIMEOUT=300`.
 
 ### 6.11 `k3s/runonce.sh` — EDIT
-- Thinned to a VM-boot shim: `exec k3s/up` (via the resolver), then write the
-  `/root/startup.done` sentinel the VM stages expect.
+- Thinned to a VM-boot shim: run `k3s/up`, then write the `/root/startup.done`
+  sentinel the VM stages expect. The shim runs `set -euo pipefail`, so the sentinel
+  is written only if `k3s/up` succeeded — a failed install does not signal "stage done".
 - Net effect: the VM evolution path now also gets the toggle-driven stack, with `up` as
   the single source of truth. `up` itself stays host/OS-agnostic.
 
