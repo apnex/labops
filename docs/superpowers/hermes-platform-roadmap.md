@@ -107,6 +107,9 @@ _Update this section as work proceeds across sessions._
   separate future effort to brainstorm on its own merits, not dropped. Now brainstorming
   the Hermes design (§3/§5/§6 above are the superseded original hypothesis — this log is
   the authoritative current state).
+- **2026-05-22 (later 4)** — Hermes deployment design brainstormed; spec written and
+  committed: `docs/superpowers/specs/2026-05-22-hermes-deployment-design.md`. Awaiting
+  spec review, then the implementation plan.
 
 ## 9. Phase A Findings (research, 2026-05-22)
 
