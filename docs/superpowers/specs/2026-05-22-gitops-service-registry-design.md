@@ -65,6 +65,7 @@ Settled during brainstorming:
 | 6 | Cluster scope | Single cluster (the NUC) — no multi-cluster generators |
 | 7 | Existing catalogue | The registry is the **single** mechanism; the `app.index.yaml` auto-loader is **retired**; `apps/` stays as inert repo content; nothing auto-loads |
 | 8 | Ordering | Eventual convergence via per-Application `syncPolicy.retry`; no ordering field in the schema |
+| 9 | Argo CD on the NUC | Installed as an implementation precursor (existing `argo/` scripts) so the registry can be acceptance-tested live end-to-end |
 
 ---
 
@@ -221,6 +222,10 @@ adequate. It is **not** hard ordering — that is the one area Flux's `dependsOn
 
 GitOps configuration — verification is behavioural, not unit-tested:
 
+- **Argo CD prerequisite:** the NUC does not yet run Argo CD — `k3s/up` stops at k3s +
+  MetalLB + storage + metrics. The implementation installs Argo CD first, via the existing
+  `argo/` scripts (`install` → `set-service` → `cli-install` → `set-password`), so the
+  acceptance below can run end-to-end.
 - `argo/install` change is one line — lint it with `shellcheck`.
 - The `ApplicationSet` and `services.yaml` are YAML — validate with `kubectl apply --dry-run`.
 - **Acceptance:** with Argo CD running, apply the `ApplicationSet`, then:
