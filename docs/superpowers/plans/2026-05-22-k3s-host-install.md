@@ -301,9 +301,19 @@ echo "[ K3S/PREPARE ] init [ ${INIT} ]"
 case "${INIT}" in
 	systemd)
 		## Rocky / CentOS / Fedora — disable firewalld (interferes with flannel CNI)
+		FW_WAS_ACTIVE="no"
+		systemctl is-active --quiet firewalld 2>/dev/null && FW_WAS_ACTIVE="yes"
 		systemctl disable --now firewalld 2>/dev/null
 		systemctl mask firewalld 2>/dev/null
 		echo "[ K3S/PREPARE ] firewalld [ disabled + masked ]"
+		## firewalld-integrated Docker must restart to re-establish its iptables rules;
+		## gated on firewalld having been active so idempotent re-runs don't bounce Docker
+		if [[ "${FW_WAS_ACTIVE}" == "yes" ]] && systemctl is-active --quiet docker 2>/dev/null; then
+			echo "[ K3S/PREPARE ] firewalld was active — restarting docker to re-establish iptables"
+			systemctl restart docker
+		else
+			echo "[ K3S/PREPARE ] docker restart not required"
+		fi
 		;;
 	openrc)
 		## Alpine — k3s requires the cgroups service under OpenRC
@@ -805,6 +815,11 @@ PURGE="no"
 if [[ -x /usr/local/bin/k3s-uninstall.sh ]]; then
 	echo "[ K3S/REMOVE ] running k3s-uninstall.sh"
 	/usr/local/bin/k3s-uninstall.sh
+	## k3s-uninstall.sh flushes iptables — restart Docker so it re-establishes its rules
+	if systemctl is-active --quiet docker 2>/dev/null; then
+		echo "[ K3S/REMOVE ] restarting docker to re-establish iptables"
+		systemctl restart docker
+	fi
 else
 	echo "[ K3S/REMOVE ] k3s-uninstall.sh not found — k3s not installed"
 fi
@@ -954,25 +969,36 @@ git commit -m "k3s/README.md: document the host install, toggles, and teardown"
 
 ## Task 13: Acceptance — install on the NUC
 
-**This task modifies the host.** It performs the actual k3s install. Commands
-assume the executor runs as `root` (the README shows the `sudo` form for non-root users).
+**This task modifies the host.** It performs the actual k3s install (and, during
+`k3s/prepare`, restarts Docker once after disabling firewalld). Commands assume the
+executor runs as `root` (the README shows the `sudo` form for non-root users).
 
-- [ ] **Step 1: Run the orchestrator**
+- [ ] **Step 1: Record Docker state before the install**
+
+Run: `docker ps --format '{{.Names}}' | sort | tee /tmp/docker-before.txt`
+Expected: lists the running containers (e.g. `nvidia-driver-injector`) — captured for comparison in Step 3.
+
+- [ ] **Step 2: Run the orchestrator**
 
 Run: `/root/labops/k3s/up`
-Expected: completes without error; the final lines include `[ K3S/VERIFY ] cluster verification PASSED` and `=== k3s/up — complete`.
+Expected: completes without error; the log shows `k3s/prepare` restarting Docker (`firewalld was active — restarting docker`); the final lines include `[ K3S/VERIFY ] cluster verification PASSED` and `=== k3s/up — complete`.
 
-- [ ] **Step 2: Confirm the node and components**
+- [ ] **Step 3: Confirm Docker survived the install**
+
+Run: `docker ps --format '{{.Names}}' | sort | diff - /tmp/docker-before.txt && docker network ls`
+Expected: `diff` reports no differences (same containers running); Docker networks are intact. Confirms the firewalld-disable + Docker-restart left the Docker stack healthy.
+
+- [ ] **Step 4: Confirm the node and components**
 
 Run: `kubectl get nodes,sc,pods -A`
 Expected: one node `Ready`; StorageClasses include both `local-path` and `standard`; pods in `kube-system` and `metallb-system` are `Running`.
 
-- [ ] **Step 3: Confirm MetalLB L2 config exists**
+- [ ] **Step 5: Confirm MetalLB L2 config exists**
 
 Run: `kubectl -n metallb-system get ipaddresspool,l2advertisement`
 Expected: `ipaddresspool/host-pool` and `l2advertisement/host-l2` are listed.
 
-- [ ] **Step 4: Functional check — a LoadBalancer service gets the host IP**
+- [ ] **Step 6: Functional check — a LoadBalancer service gets the host IP**
 
 Run:
 ```bash
@@ -982,7 +1008,7 @@ bash /root/labops/healthcheck/k8s-external-ip lbtest default
 ```
 Expected: `k8s-external-ip` prints `[ K8S/EXTERNAL-IP ] ... is ALIVE !!` with the host IP and port `80` — confirming MetalLB allocates and advertises the host IP (the `L2Advertisement` fix working end to end).
 
-- [ ] **Step 5: Clean up the functional check**
+- [ ] **Step 7: Clean up the functional check**
 
 Run: `kubectl delete deploy/lbtest svc/lbtest`
 Expected: both deleted.
@@ -996,7 +1022,7 @@ Expected: both deleted.
 - [ ] **Step 1: Re-run the orchestrator on the already-installed host**
 
 Run: `/root/labops/k3s/up`
-Expected: completes without error and ends with `cluster verification PASSED`. `metallb/install` reports the same version; `storage/install` prints `local-path provisioner already present — skipping deploy`.
+Expected: completes without error and ends with `cluster verification PASSED`. `k3s/prepare` prints `docker restart not required` (firewalld already inactive — confirms the Docker bounce is one-time); `metallb/install` reports the same version; `storage/install` prints `local-path provisioner already present — skipping deploy`.
 
 - [ ] **Step 2: Confirm no duplicate/abnormal state**
 
@@ -1010,12 +1036,12 @@ Expected: still exactly one `standard` and one `local-path` StorageClass (no dup
 - [ ] **Step 1: Tear down (keep PV data)**
 
 Run: `/root/labops/k3s/remove`
-Expected: runs `k3s-uninstall.sh`, removes `/root/.kube/config`, prints `kept PV data at /opt/local-path-provisioner`.
+Expected: runs `k3s-uninstall.sh`, prints `restarting docker to re-establish iptables`, removes `/root/.kube/config`, and prints `kept PV data at /opt/local-path-provisioner`.
 
-- [ ] **Step 2: Confirm k3s is gone**
+- [ ] **Step 2: Confirm k3s is gone and Docker survived**
 
-Run: `command -v k3s; ls /usr/local/bin/k3s-uninstall.sh 2>&1`
-Expected: `k3s` not found; uninstall script no longer present.
+Run: `command -v k3s; ls /usr/local/bin/k3s-uninstall.sh 2>&1; docker ps --format '{{.Names}}' | sort | diff - /tmp/docker-before.txt`
+Expected: `k3s` not found; uninstall script no longer present; `diff` shows the Docker containers from Task 13 still running — teardown did not disrupt Docker.
 
 - [ ] **Step 3: Rebuild**
 

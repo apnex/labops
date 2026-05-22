@@ -58,7 +58,7 @@ Settled during brainstorming:
 |---|----------|--------|
 | 1 | Scope | k3s + MetalLB + (k3s-bundled storage + metrics, toggleable). No Argo CD. |
 | 2 | Execution model | Hybrid — local-first entrypoint; modules also runnable standalone / via `curl\|sh` |
-| 3 | Firewall | Disable firewalld; SELinux left **enforcing** (k3s installer adds `k3s-selinux`) |
+| 3 | Firewall | Disable + mask firewalld; restart Docker once if it was firewalld-integrated; SELinux left **enforcing** |
 | 4 | Versioning | Track latest channels; MetalLB follows current official steps (native manifest, latest tag) |
 | 5 | Re-run behaviour | Idempotent entrypoint + a real teardown |
 | 6 | Orchestrator | New `k3s/up` — thin composition only, no install logic |
@@ -87,6 +87,11 @@ Settled during brainstorming:
   `metallb.universe.tf/allow-shared-ip: host`. All `LoadBalancer` services share the
   single host IP (keyed `host`), distinguished by port. This is still supported in
   current MetalLB — the `vip-*` manifests need **no changes**.
+- **Docker coexistence:** the target host runs Docker (firewalld-integrated backend)
+  with live containers. k3s uses a separate embedded containerd and shares no host
+  ports, so the cluster coexists cleanly — but disabling firewalld forces a one-time
+  Docker restart so Docker re-establishes its iptables rules (see §6.2); teardown
+  needs the same (see §6.5).
 
 ---
 
@@ -206,13 +211,27 @@ Every new/edited module begins with a standard header:
   elif command -v rc-update >/dev/null; then INIT=openrc
   fi
   case "$INIT" in
-    systemd) systemctl disable --now firewalld 2>/dev/null
-             systemctl mask firewalld 2>/dev/null ;;          # Rocky/CentOS/Fedora
-    openrc)  rc-update add cgroups boot
-             rc-service cgroups start ;;                       # Alpine — k3s needs cgroups
+    systemd)  ## Rocky / CentOS / Fedora
+      FW_WAS_ACTIVE=no
+      systemctl is-active --quiet firewalld && FW_WAS_ACTIVE=yes
+      systemctl disable --now firewalld 2>/dev/null
+      systemctl mask firewalld 2>/dev/null
+      ## firewalld-integrated Docker must restart once to re-establish iptables
+      if [[ $FW_WAS_ACTIVE == yes ]] && systemctl is-active --quiet docker; then
+        systemctl restart docker
+      fi
+      ;;
+    openrc)   ## Alpine — k3s needs the cgroups service under OpenRC
+      rc-update add cgroups boot
+      rc-service cgroups start
+      ;;
   esac
   ```
-- Sanity checks: confirm `curl` and `ip` (iproute) are present; report `getenforce`.
+- Sanity checks: confirm `curl`, `ip` (iproute), and `jq` are present; report `getenforce`.
+- **Docker-aware firewalld disable:** on the `systemd` branch, if firewalld *was active*
+  and Docker is running, `prepare` runs `systemctl restart docker` **once** so Docker
+  re-establishes its iptables rules without firewalld. Gating on firewalld having been
+  active keeps idempotent re-runs from bouncing Docker.
 - Light OS check: warn (do **not** hard-fail) on an unrecognised OS.
 - Idempotent. SELinux left **enforcing** — the k3s installer pulls `k3s-selinux` itself.
 
@@ -239,6 +258,9 @@ Every new/edited module begins with a standard header:
 - **Purpose:** reset the host for a clean reinstall.
 - Runs `/usr/local/bin/k3s-uninstall.sh` if present (no-op if k3s absent);
   removes `/root/.kube/config`.
+- **Docker restart:** `k3s-uninstall.sh` flushes iptables, which can disrupt a running
+  Docker's chains — so if `k3s-uninstall.sh` ran and Docker is active, `remove` runs
+  `systemctl restart docker` to re-establish Docker's rules.
 - **PV data is opt-in to delete.** local-path volume data under
   `/opt/local-path-provisioner` survives uninstall. By default `remove` prints the path
   and leaves it; `k3s/remove --purge` additionally deletes that directory.
@@ -360,3 +382,7 @@ behavioural:
   stack to the toggle-driven one. Intended as an upgrade; called out for visibility.
 - The NUC's k3s API binds the host IP; with firewalld disabled, port 6443 is reachable
   on the LAN. Acceptable for a lab host on a trusted network (decision #3).
+- **Docker coexistence:** k3s's embedded containerd is independent of the host Docker
+  engine; verified no host-port conflicts (`6443`, `10250`, `8472/udp`, `7946` all
+  free). The only interaction is firewalld — handled by the one-time Docker restart in
+  `prepare` and the post-uninstall restart in `remove` (§6.2, §6.5).
