@@ -1,15 +1,31 @@
 #!/bin/bash
+## module: argo/cli-install
+## purpose: install the argocd CLI from the running Argo CD server
+## inputs:  KUBECONFIG, LABOPS_ROOT (auto-detected if unset)
+## needs:   healthcheck/k8s-external-ip, healthcheck/net-ssl
 
-## healthcheck argo vip is ready
-ARGOCD_SERVER=$(curl -fsSL https://labops.sh/healthcheck/k8s-external-ip | SERVICE="vip-argocd-server" NAMESPACE="argocd" bash -- 2>/dev/tty)
+## ── labops module resolver ───────────────────────────────────────────
+LABOPS_BASE="${LABOPS_BASE:-https://labops.sh}"
+LABOPS_ROOT="${LABOPS_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+command -v run >/dev/null 2>&1 || run() {
+	local module="$1"; shift
+	if [[ -n "${LABOPS_ROOT:-}" && -f "${LABOPS_ROOT}/${module}" ]]; then
+		bash "${LABOPS_ROOT}/${module}" "$@"
+	else
+		curl -fsSL "${LABOPS_BASE}/${module}" | bash -s -- "$@"
+	fi
+}
 
-## healthcheck ssl
-ARGOCD_THUMBPRINT=$(curl -fsSL https://labops.sh/healthcheck/net-ssl | HOST="${ARGOCD_SERVER}" bash -- 2>/dev/tty)
+## healthcheck: wait for the vip-argocd-server external IP
+ARGOCD_SERVER=$(run healthcheck/k8s-external-ip vip-argocd-server argocd)
 
-## get cli
-curl -ksLo /usr/bin/argocd https://${ARGOCD_SERVER}/download/argocd-linux-amd64
-chmod +x /usr/bin/argocd
+## healthcheck: wait for the server TLS to be ready
+run healthcheck/net-ssl "${ARGOCD_SERVER}"
 
-## verify cli
+## fetch the argocd CLI from the server
+curl -ksLo /usr/local/bin/argocd "https://${ARGOCD_SERVER}/download/argocd-linux-amd64"
+chmod +x /usr/local/bin/argocd
+
+## verify
 argocd login --core
 argocd version --insecure
