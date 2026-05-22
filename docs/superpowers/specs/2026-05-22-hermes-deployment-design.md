@@ -130,7 +130,7 @@ init container substitutes the URL at first boot from a Secret-sourced env var. 
 then reads and *mutates* `/opt/data/config.yaml` at runtime, so the file lives on the PVC,
 not on a mounted ConfigMap.
 
-**ConfigMap `hermes-config`** — holds `config.yaml.tmpl`:
+**ConfigMap `hermes-config`** — holds `config.yaml.tpl`:
 
 ```yaml
 model:
@@ -147,7 +147,7 @@ placeholder and writes the file; on later boots it leaves the file alone:
 ```sh
 if [ ! -f /opt/data/config.yaml ]; then
   sed -e "s|@LITELLM_BASE_URL@|${LITELLM_BASE_URL}|g" \
-    /seed/config.yaml.tmpl > /opt/data/config.yaml
+    /seed/config.yaml.tpl > /opt/data/config.yaml
 fi
 ```
 
