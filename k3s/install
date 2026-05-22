@@ -1,10 +1,15 @@
 #!/bin/bash
+## module: k3s/install
+## purpose: install the k3s server and place a kubeconfig at /root/.kube/config
+## inputs:  K3S_DISABLE (comma list of bundled components to disable; default servicelb,traefik)
+## needs:   -
 
 ## install k3s
+K3S_DISABLE="${K3S_DISABLE:-servicelb,traefik}"
 export INSTALL_K3S_CHANNEL_URL="https://update.k3s.io/v1-release/channels"
-#export INSTALL_K3S_CHANNEL="latest"
 export INSTALL_K3S_CHANNEL="stable"
-curl -fsSL https://get.k3s.io | sh -s - --disable=servicelb,traefik
+echo "### installing k3s --disable=${K3S_DISABLE} ###"
+curl -fsSL https://get.k3s.io | sh -s - --disable="${K3S_DISABLE}"
 
 ## kubeconfig
 echo "### sync kubeconfig ###"
@@ -19,4 +24,3 @@ cp /etc/rancher/k3s/k3s.yaml /root/.kube/config
 ## kubectl
 sleep 3
 kubectl get nodes
-#kubectl get pods -A
