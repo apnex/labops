@@ -153,38 +153,46 @@ A single `ApplicationSet` (`metadata.name: services`, namespace `argocd`), write
 - **Generator:** Git file generator — `repoURL` the `labops` repo, `revision: HEAD`,
   `files: [{ path: argo/services.yaml }]`. Because `services.yaml` is a top-level list,
   the generator yields one parameter set per element.
-- **`goTemplate: true`** — the `Application` template is a Go template. Its `source` is
-  conditional on `type`:
-  - `git` → `source.path`
-  - `helm` → `source.chart` + `source.helm.valuesObject` (the latter only when `values` is present)
+- **`goTemplate: true` + `templatePatch`** — `goTemplate` substitutes `{{ .field }}` into
+  the template's string values. The git-vs-helm *structural* choice (`source.path` vs
+  `source.chart`/`helm`) cannot be a bare conditional in the manifest, so it lives in
+  `spec.templatePatch` — a Go-templated string block that renders a strategic-merge patch
+  onto the template: `git` patches in `source.path`; `helm` patches in `source.chart`
+  (plus `source.helm.valuesObject` when `values` is set, injected as JSON via `toJson`).
 - **Template `syncPolicy`** (every generated `Application`): `automated` with `selfHeal: true`
-  and `prune: true`; `syncOptions: [CreateNamespace=true]`; and a bounded
-  `retry` (e.g. `limit: 5`, exponential `backoff` capped at ~10m) — the retry is what makes
-  eventual convergence work (§5).
+  and `prune: true`; `syncOptions: [CreateNamespace=true]`; and a bounded `retry` (`limit: 5`,
+  exponential `backoff` capped at ~10m) — the retry is what makes eventual convergence work (§5).
 
-Illustrative template shape (exact `goTemplate` guards — e.g. handling an absent `values`
-— are finalised in the implementation plan and validated against a live Argo CD):
+The manifest is valid YAML — the `{{ }}` conditionals sit inside the `templatePatch: |`
+string; the template *rendering* is validated against the live Argo CD in the plan:
 
 ```yaml
-template:
-  metadata:
-    name: '{{ .name }}'
-  spec:
-    project: default
-    destination:
-      server: https://kubernetes.default.svc
-      namespace: '{{ .namespace }}'
-    source:
-      repoURL: '{{ .repoURL }}'
-      targetRevision: '{{ .revision }}'
-      # if .type == helm: chart: '{{ .chart }}' (+ helm.valuesObject when .values set)
-      # else:             path:  '{{ .path }}'
-    syncPolicy:
-      automated: { selfHeal: true, prune: true }
-      syncOptions: [ CreateNamespace=true ]
-      retry:
-        limit: 5
-        backoff: { duration: 30s, factor: 2, maxDuration: 10m }
+spec:
+  goTemplate: true
+  generators:
+    - git: { repoURL: <labops repo>, revision: HEAD, files: [{ path: argo/services.yaml }] }
+  template:
+    metadata: { name: '{{ .name }}' }
+    spec:
+      project: default
+      destination: { server: https://kubernetes.default.svc, namespace: '{{ .namespace }}' }
+      source: { repoURL: '{{ .repoURL }}', targetRevision: '{{ .revision }}' }
+      syncPolicy:
+        automated: { selfHeal: true, prune: true }
+        syncOptions: [ CreateNamespace=true ]
+        retry: { limit: 5, backoff: { duration: 30s, factor: 2, maxDuration: 10m } }
+  templatePatch: |
+    spec:
+      source:
+        {{- if eq .type "helm" }}
+        chart: {{ .chart | quote }}
+        {{- if .values }}
+        helm:
+          valuesObject: {{ .values | toJson }}
+        {{- end }}
+        {{- else }}
+        path: {{ .path | quote }}
+        {{- end }}
 ```
 
 ### 4.3 `argo/install` — edited

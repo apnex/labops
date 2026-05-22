@@ -374,16 +374,6 @@ spec:
       source:
         repoURL: '{{ .repoURL }}'
         targetRevision: '{{ .revision }}'
-        {{- if eq .type "helm" }}
-        chart: '{{ .chart }}'
-        {{- if .values }}
-        helm:
-          valuesObject:
-            {{- toYaml .values | nindent 12 }}
-        {{- end }}
-        {{- else }}
-        path: '{{ .path }}'
-        {{- end }}
       syncPolicy:
         automated:
           selfHeal: true
@@ -396,9 +386,21 @@ spec:
             duration: 30s
             factor: 2
             maxDuration: 10m
+  templatePatch: |
+    spec:
+      source:
+        {{- if eq .type "helm" }}
+        chart: {{ .chart | quote }}
+        {{- if .values }}
+        helm:
+          valuesObject: {{ .values | toJson }}
+        {{- end }}
+        {{- else }}
+        path: {{ .path | quote }}
+        {{- end }}
 ```
 
-The Git file generator reads `argo/services.yaml`; because it is a top-level list, it yields one element per entry. `goTemplate` branches the `source` on `type`. The conditional `helm` / `values` rendering is validated by `kubectl --dry-run` (Step 2) and proven live in Task 10.
+The Git file generator reads `argo/services.yaml`; because it is a top-level list, it yields one element per entry. `goTemplate` substitutes `{{ .field }}` into the template's string values; the git-vs-helm structural choice lives in `spec.templatePatch` (a Go-templated string — so the manifest stays valid YAML). The template *rendering* is proven live in Task 10.
 
 - [ ] **Step 2: Validate the manifest is well-formed YAML**
 
