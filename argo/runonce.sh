@@ -1,4 +1,8 @@
 #!/bin/bash
+## module: argo/runonce.sh
+## purpose: VM first-boot shim — run the k3s stack + Argo CD, then signal completion
+## inputs:  -
+## needs:   k3s/up, argo/install, argo/set-service, argo/cli-install, argo/set-password
 
 if [[ -e /tmp/runonce ]]; then
 	rm /tmp/runonce
