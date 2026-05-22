@@ -1,9 +1,14 @@
 #!/bin/bash
+## module: healthcheck/k8s-deployment-ready
+## purpose: block until all replicas of a deployment are READY
+## inputs:  $1=RESOURCE $2=NAMESPACE (or RESOURCE/NAMESPACE env); WAIT_TIMEOUT (0=unbounded, default 0)
+## needs:   -
 # for a given deployment, checks that all replicas are in READY state
-# returns null
 
 ## defaults
 VAR_SLEEP=5
+WAIT_TIMEOUT="${WAIT_TIMEOUT:-0}"
+ELAPSED=0
 if [[ -n $1 ]]; then
 	RESOURCE=$1
 fi
@@ -12,15 +17,18 @@ if [[ -n $2 ]]; then
 fi
 
 function getDeploymentReady {
-	local JSON=$(kubectl -n ${NAMESPACE} get deployment ${RESOURCE} -o json)
+	local JSON
+	JSON=$(kubectl -n "${NAMESPACE}" get deployment "${RESOURCE}" -o json)
 	read -r -d '' FILTER1 <<-'EOF'
 		.status.readyReplicas // empty
 	EOF
-	local READYREPLICAS=$(echo ${JSON} | jq -r "${FILTER1}")
+	local READYREPLICAS
+	READYREPLICAS=$(echo "${JSON}" | jq -r "${FILTER1}")
 	read -r -d '' FILTER2 <<-'EOF'
 		.status.replicas // empty
 	EOF
-	local REPLICAS=$(echo ${JSON} | jq -r "${FILTER2}")
+	local REPLICAS
+	REPLICAS=$(echo "${JSON}" | jq -r "${FILTER2}")
 	local STATUS="${READYREPLICAS} ${REPLICAS}"
 
 	# print X Y
@@ -30,9 +38,7 @@ function getDeploymentReady {
 if [[ -n ${RESOURCE} ]]; then
 	ALIVE=0
 	while [[ $ALIVE == 0 ]]; do
-		ARRSTATUS=($(getDeploymentReady "${RESOURCE}" "${NAMESPACE}"))
-		READY=${ARRSTATUS[1]}
-		TARGET=${ARRSTATUS[0]}
+		read -r TARGET READY < <(getDeploymentReady "${RESOURCE}" "${NAMESPACE}")
 
 		## check alive
 		if [[ -n ${READY} && -n ${TARGET} ]]; then
@@ -50,7 +56,12 @@ if [[ -n ${RESOURCE} ]]; then
 			TARGET="0"
 		fi
 		printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TARGET} ] waiting for RESOURCE.. sleep ${VAR_SLEEP}" 1>&2
-		sleep ${VAR_SLEEP}
+		sleep "${VAR_SLEEP}"
+		ELAPSED=$((ELAPSED + VAR_SLEEP))
+		if [[ ${WAIT_TIMEOUT} -gt 0 && ${ELAPSED} -ge ${WAIT_TIMEOUT} ]]; then
+			printf "%s\n" "[ K8S/DEPLOYMENT-READY ] ERROR: ${NAMESPACE}/${RESOURCE} not ready after ${WAIT_TIMEOUT}s" 1>&2
+			exit 1
+		fi
 	done
 	printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TARGET} ] is ALIVE !!" 1>&2
 else
