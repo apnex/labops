@@ -25,6 +25,10 @@ pointing at a remote public repo or Helm chart — that programmatically generat
 `Application`s. Adding a service becomes one list entry. Nothing deploys unless it is
 explicitly listed.
 
+Separately, an audit of the existing `argo/` install scripts — which this work runs as
+the Argo CD install precursor — found correctness bugs and staleness (§4.4). Remediating
+them is folded in, so the precursor is sound.
+
 This is a single, cohesive capability — one spec, one plan.
 
 ---
@@ -39,6 +43,8 @@ This is a single, cohesive capability — one spec, one plan.
 - Add / change / remove a service = edit one list entry and commit — no other file touched.
 - **Curated:** only services explicitly listed deploy. Nothing auto-loads.
 - Use the modern Argo path (`ApplicationSet`), keeping the already-installed Argo CD.
+- Correct and modernise the `argo/` install scripts (the install precursor) — fixing the
+  audited bugs, anti-pattern, and hygiene issues.
 
 ### Non-Goals
 - **Private repos / credential management** — all sources are public (no in-cluster repo secrets).
@@ -66,6 +72,8 @@ Settled during brainstorming:
 | 7 | Existing catalogue | The registry is the **single** mechanism; the `app.index.yaml` auto-loader is **retired**; `apps/` stays as inert repo content; nothing auto-loads |
 | 8 | Ordering | Eventual convergence via per-Application `syncPolicy.retry`; no ordering field in the schema |
 | 9 | Argo CD on the NUC | Installed as an implementation precursor (existing `argo/` scripts) so the registry can be acceptance-tested live end-to-end |
+| 10 | `argo/` scripts | All audited bugs + the anti-pattern + hygiene issues remediated in this work (§4.4) |
+| 11 | Argo CD version | Sourced from the `stable` branch (unpinned) — consistent with the repo's track-latest stance |
 
 ---
 
@@ -89,8 +97,12 @@ Both controllers already ship in the Argo CD `stable` manifests `argo/install` a
 |------|--------|------|
 | `argo/services.yaml` | **new** | the registry — the YAML list you edit to add/remove a service |
 | `argo/services.appset.yaml` | **new** | the `ApplicationSet` — write-once; generates Applications from the registry |
-| `argo/install` | **edit** | apply `services.appset.yaml` instead of `app.index.yaml` |
+| `argo/install` | **edit** | apply `services.appset.yaml`; make namespace creation idempotent (§4.3) |
 | `argo/app.index.yaml` | **remove** | the retired auto-loader |
+| `argo/set-service` | **edit** | add the LoadBalancer *alongside* `argocd-server`, not delete it (§4.4) |
+| `argo/cli-install` | **edit** | drop the `/dev/tty` redirect + dead var; CLI → `/usr/local/bin` (§4.4) |
+| `argo/set-password` | **edit** | add `admin.passwordMtime` (§4.4) |
+| `argo/remove` | **edit** | delete the `services` ApplicationSet, not the retired `index` app (§4.4) |
 
 `argo/runonce.sh` is unaffected — it calls `argo/install`, so it picks up the change with
 no edit. The `apps/` directory and its now-inert `apps/app.*.yaml` child manifests are
@@ -176,9 +188,33 @@ template:
 
 ### 4.3 `argo/install` — edited
 
-Unchanged except the final line: apply `argo/services.appset.yaml` in place of
-`argo/app.index.yaml`. The namespace creation and the Argo CD `stable`-manifest apply
-stay as-is.
+Two changes: (1) apply `argo/services.appset.yaml` in place of `argo/app.index.yaml` as
+the final step; (2) make namespace creation idempotent —
+`kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -` — so
+re-runs don't error. Argo CD continues to install from the `stable` branch (decision #11).
+
+### 4.4 `argo/` install-script remediation
+
+The audit of the scripts this work runs as the install precursor found:
+
+- **`argo/set-service`** — currently `kubectl delete`s the `argocd-server` Service before
+  applying the `vip-argocd-server` LoadBalancer. The delete is needless and mildly risky
+  (the vip is a *separate* service). Fix: apply the LoadBalancer *alongside*; leave
+  `argocd-server` intact; drop the dead commented-out patch block. Idempotent.
+- **`argo/cli-install`** — `2>/dev/tty` on the healthcheck calls breaks in non-interactive
+  runs (no controlling terminal). Fix: remove the redirect — stderr flows to the script's
+  own stderr. Remove the dead `ARGOCD_THUMBPRINT` capture (keep the `net-ssl` call, which
+  doubles as a readiness wait). Install the CLI to `/usr/local/bin/argocd` (was `/usr/bin`).
+- **`argo/set-password`** — patches only `admin.password`. Fix: also set
+  `admin.passwordMtime` (an RFC3339 timestamp) — Argo's documented password reset patches
+  both; the timestamp registers the change and invalidates stale tokens. Correct the stale
+  `## from stdin` comment (the value is `$1`); quote variables.
+- **`argo/remove`** — deletes the retired `index` app-of-apps. Fix: delete the `services`
+  `ApplicationSet` instead (its deletion cascades to the generated Applications); keep the
+  stuck-app finalizer-clear loop as a safety net; use `--ignore-not-found` for idempotency.
+
+Converting the `argo/` scripts to the `run` module resolver the k3s modules use is a
+separate consistency pass — out of scope here.
 
 ---
 
@@ -226,7 +262,8 @@ GitOps configuration — verification is behavioural, not unit-tested:
   MetalLB + storage + metrics. The implementation installs Argo CD first, via the existing
   `argo/` scripts (`install` → `set-service` → `cli-install` → `set-password`), so the
   acceptance below can run end-to-end.
-- `argo/install` change is one line — lint it with `shellcheck`.
+- Every edited `argo/` script (`install`, `set-service`, `cli-install`, `set-password`,
+  `remove`) must be `shellcheck`-clean.
 - The `ApplicationSet` and `services.yaml` are YAML — validate with `kubectl apply --dry-run`.
 - **Acceptance:** with Argo CD running, apply the `ApplicationSet`, then:
   - add a known-good `git` entry (e.g. `podinfo`) → confirm the `Application` is generated
