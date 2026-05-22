@@ -34,6 +34,10 @@
 
 ```bash
 #!/bin/bash
+## module: argo/install
+## purpose: install Argo CD and the labops service-registry ApplicationSet
+## inputs:  KUBECONFIG
+## needs:   -
 # https://argo-cd.readthedocs.io/en/stable/getting_started/
 
 ## namespace (idempotent)
@@ -82,6 +86,11 @@ git commit -m "argo/install: idempotent namespace; apply services.appset.yaml; r
 
 ```bash
 #!/bin/bash
+## module: argo/set-service
+## purpose: expose the Argo CD UI as a LoadBalancer (vip-argocd-server)
+## inputs:  KUBECONFIG
+## needs:   -
+
 ## expose the Argo CD UI as a LoadBalancer (vip-argocd-server), alongside argocd-server
 kubectl -n argocd apply -f https://labops.sh/argo/argo.vip.yaml
 ```
@@ -107,21 +116,37 @@ git commit -m "argo/set-service: add the LoadBalancer alongside argocd-server, d
 
 ---
 
-## Task 3: `argo/cli-install` — drop `/dev/tty`, dead var, fix install path
+## Task 3: `argo/cli-install` — remediate + module header + `run` resolver
 
 **Files:**
 - Modify: `argo/cli-install`
 
-- [ ] **Step 1: Replace `argo/cli-install`** with EXACTLY:
+- [ ] **Step 1: Replace `argo/cli-install`** with EXACTLY this content (the resolver function body is TAB-indented):
 
 ```bash
 #!/bin/bash
+## module: argo/cli-install
+## purpose: install the argocd CLI from the running Argo CD server
+## inputs:  KUBECONFIG, LABOPS_ROOT (auto-detected if unset)
+## needs:   healthcheck/k8s-external-ip, healthcheck/net-ssl
+
+## ── labops module resolver ───────────────────────────────────────────
+LABOPS_BASE="${LABOPS_BASE:-https://labops.sh}"
+LABOPS_ROOT="${LABOPS_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+command -v run >/dev/null 2>&1 || run() {
+	local module="$1"; shift
+	if [[ -n "${LABOPS_ROOT:-}" && -f "${LABOPS_ROOT}/${module}" ]]; then
+		bash "${LABOPS_ROOT}/${module}" "$@"
+	else
+		curl -fsSL "${LABOPS_BASE}/${module}" | bash -s -- "$@"
+	fi
+}
 
 ## healthcheck: wait for the vip-argocd-server external IP
-ARGOCD_SERVER=$(curl -fsSL https://labops.sh/healthcheck/k8s-external-ip | SERVICE="vip-argocd-server" NAMESPACE="argocd" bash --)
+ARGOCD_SERVER=$(run healthcheck/k8s-external-ip vip-argocd-server argocd)
 
 ## healthcheck: wait for the server TLS to be ready
-curl -fsSL https://labops.sh/healthcheck/net-ssl | HOST="${ARGOCD_SERVER}" bash --
+run healthcheck/net-ssl "${ARGOCD_SERVER}"
 
 ## fetch the argocd CLI from the server
 curl -ksLo /usr/local/bin/argocd "https://${ARGOCD_SERVER}/download/argocd-linux-amd64"
@@ -132,7 +157,7 @@ argocd login --core
 argocd version --insecure
 ```
 
-Changes: the `2>/dev/tty` redirects are removed (they break in non-interactive runs — stderr now flows to the script's own stderr); the dead `ARGOCD_THUMBPRINT` capture is gone (the `net-ssl` call is kept as a readiness wait); the CLI installs to `/usr/local/bin` (was `/usr/bin`).
+Changes from the original: the `2>/dev/tty` redirects are gone (they break in non-interactive runs — no controlling terminal); the dead `ARGOCD_THUMBPRINT` capture is gone; the CLI installs to `/usr/local/bin` (was `/usr/bin`); the module header is added; and the two healthcheck calls now go through the inlined `run` resolver with positional args (both `healthcheck/k8s-external-ip` and `healthcheck/net-ssl` accept `$1`/`$2`) instead of the bare `curl … | bash` pattern.
 
 - [ ] **Step 2: Lint**
 
@@ -144,11 +169,16 @@ Expected: no output, exit 0.
 Run: `bash -n argo/cli-install`
 Expected: no output, exit 0.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Verify tab indentation**
+
+Run: `grep -nP '^ +\S' argo/cli-install`
+Expected: no output (the resolver function body is tab-indented).
+
+- [ ] **Step 5: Commit**
 
 ```bash
 git add argo/cli-install
-git commit -m "argo/cli-install: drop fragile /dev/tty redirect and dead var; install CLI to /usr/local/bin"
+git commit -m "argo/cli-install: remediate; add module header and run resolver"
 ```
 
 ---
@@ -162,6 +192,10 @@ git commit -m "argo/cli-install: drop fragile /dev/tty redirect and dead var; in
 
 ```bash
 #!/bin/bash
+## module: argo/set-password
+## purpose: set the Argo CD admin password
+## inputs:  $1 = password (default VMware1!), KUBECONFIG
+## needs:   -
 
 NEWPASSWORD="${1}"   ## password from arg 1
 if [[ -z ${NEWPASSWORD} ]]; then
@@ -217,6 +251,10 @@ git commit -m "argo/set-password: also set admin.passwordMtime so Argo registers
 
 ```bash
 #!/bin/bash
+## module: argo/remove
+## purpose: tear down Argo CD and the service-registry ApplicationSet
+## inputs:  KUBECONFIG
+## needs:   -
 
 ## delete the service-registry ApplicationSet (cascades to its generated Applications)
 kubectl -n argocd delete applicationset services --ignore-not-found

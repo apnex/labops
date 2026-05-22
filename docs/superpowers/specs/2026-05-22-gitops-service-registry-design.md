@@ -74,6 +74,7 @@ Settled during brainstorming:
 | 9 | Argo CD on the NUC | Installed as an implementation precursor (existing `argo/` scripts) so the registry can be acceptance-tested live end-to-end |
 | 10 | `argo/` scripts | All audited bugs + the anti-pattern + hygiene issues remediated in this work (§4.4) |
 | 11 | Argo CD version | Sourced from the `stable` branch (unpinned) — consistent with the repo's track-latest stance |
+| 12 | `argo/` module consistency | All 5 scripts gain the standard module header; `cli-install` adopts the `run` resolver — parity with the k3s modules (§4.4) |
 
 ---
 
@@ -213,8 +214,14 @@ The audit of the scripts this work runs as the install precursor found:
   `ApplicationSet` instead (its deletion cascades to the generated Applications); keep the
   stuck-app finalizer-clear loop as a safety net; use `--ignore-not-found` for idempotency.
 
-Converting the `argo/` scripts to the `run` module resolver the k3s modules use is a
-separate consistency pass — out of scope here.
+**Module consistency** (parity with the k3s modules): every script above (`install`,
+`set-service`, `cli-install`, `set-password`, `remove`) also gains the standard
+`## module / purpose / inputs / needs` header. `cli-install` additionally adopts the
+inlined `run` module resolver for its `healthcheck/k8s-external-ip` and
+`healthcheck/net-ssl` calls — both healthchecks accept positional args, so the bare
+`curl … | bash` pattern is replaced by `run healthcheck/… <args>`. The other four scripts
+call no sibling scripts, so they take only the header. There are no inline wait-loops in
+`argo/` to dedupe — `cli-install` already uses the healthcheck modules.
 
 ---
 
