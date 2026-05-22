@@ -11,3 +11,10 @@
   gitPath: kustomize
   revision: master
   namespace: podinfo
+
+- name: podinfo-helm
+  type: helm
+  repoURL: https://stefanprodan.github.io/podinfo
+  chart: podinfo
+  revision: 6.12.0
+  namespace: podinfo-helm
