@@ -161,7 +161,7 @@ if [[ -n ${RESOURCE} ]]; then
 			TARGET="0"
 		fi
 		printf "%s\n" "[ K8S/DEPLOYMENT-READY ] REPLICAS [ ${NAMESPACE}/${RESOURCE}:${READY}/${TARGET} ] waiting for RESOURCE.. sleep ${VAR_SLEEP}" 1>&2
-		sleep ${VAR_SLEEP}
+		sleep "${VAR_SLEEP}"
 		ELAPSED=$((ELAPSED + VAR_SLEEP))
 		if [[ ${WAIT_TIMEOUT} -gt 0 && ${ELAPSED} -ge ${WAIT_TIMEOUT} ]]; then
 			printf "%s\n" "[ K8S/DEPLOYMENT-READY ] ERROR: ${NAMESPACE}/${RESOURCE} not ready after ${WAIT_TIMEOUT}s" 1>&2
