@@ -30,6 +30,9 @@ Hermes deployment only. It is a single, cohesive capability — one spec, one pl
 - Hermes uses the remote OpenAI-compatible **LiteLLM router** for inference, default model
   `smart-coder`.
 - Persistent: skills, sessions, and memory survive pod restarts.
+- **The `apnex/hermes` repo is a generic, reusable public deployment template.** No
+  operator-specific values are committed; all per-deployment specifics (the LiteLLM
+  router's base URL, API key, API server key) live in the operator's Secret.
 
 ### Non-Goals
 - **Messaging-platform gateways** (Telegram / Discord / Slack / …) — not deployed.
@@ -54,7 +57,7 @@ Hermes deployment only. It is a single, cohesive capability — one spec, one pl
 | 7 | Interfaces | API `:8642` + dashboard `:9119`; no messaging gateways |
 | 8 | `config.yaml` | Seeded via ConfigMap + init container (seed-if-absent); Hermes owns it after first boot |
 | 9 | Model | Default `smart-coder` (Claude Opus 4.7 via the LiteLLM router) |
-| 10 | Secrets | Manually-applied `hermes-secrets` Secret, created out-of-band by the `set-secret` script from env vars; not in git, not Argo-managed |
+| 10 | Secrets | Manually-applied `hermes-secrets` Secret with **three** values — `LITELLM_BASE_URL`, `LITELLM_API_KEY`, `API_SERVER_KEY` — created out-of-band by the `set-secret` script from env vars; not in git, not Argo-managed |
 | 11 | Exposure | One MetalLB LoadBalancer Service, `allow-shared-ip: host`, on the NUC IP `192.168.1.250`, ports 8642 + 9119 |
 | 12 | TLS | Plain HTTP (LAN); the API is guarded by the `API_SERVER_KEY` bearer token |
 
@@ -119,59 +122,73 @@ this is a deployment-artifact repo, not an agent-development repo.
 
 ## 5. Config & Secrets
 
-### 5.1 `config.yaml` — seeded, then Hermes-owned
+### 5.1 `config.yaml` — templated, seeded, then Hermes-owned
 
-Hermes reads and *mutates* `/opt/data/config.yaml` at runtime, so a ConfigMap cannot be
-mounted there directly. Instead: the `hermes-config` ConfigMap holds the *seed*; an init
-container copies it into the PVC **only if `/opt/data/config.yaml` is absent**:
+The LiteLLM router's **base URL** is operator-specific (each adopter has a different
+router), so it does not live in the public repo. The ConfigMap holds a **template**; the
+init container substitutes the URL at first boot from a Secret-sourced env var. Hermes
+then reads and *mutates* `/opt/data/config.yaml` at runtime, so the file lives on the PVC,
+not on a mounted ConfigMap.
 
-```sh
-[ -f /opt/data/config.yaml ] || cp /seed/config.yaml /opt/data/config.yaml
-```
-
-First boot seeds it; later boots keep Hermes's evolved version. **Consequence:** changing
-the seed after first deploy does not affect a running instance — update the live file
-(`hermes config set`) or recreate the PVC.
-
-The seed `config.yaml` points Hermes at the LiteLLM router:
+**ConfigMap `hermes-config`** — holds `config.yaml.tmpl`:
 
 ```yaml
 model:
   provider: custom
-  base_url: <LiteLLM router base URL — per ~/opencode.json>
+  base_url: @LITELLM_BASE_URL@
   default: smart-coder
+  key_env: LITELLM_API_KEY      # Hermes reads the key from this env var at runtime
 ```
 
-The router **API key is not in `config.yaml`** — it is supplied via the `LITELLM_API_KEY`
-environment variable (from the Secret) and referenced from `config.yaml` by Hermes's
-env-reference mechanism. The exact `config.yaml` key name (`key_env` or equivalent) and any
-other mandatory fields are confirmed against Hermes's configuration docs during
-implementation. The **principle is fixed:** provider + base URL in the ConfigMap, the key
-value only ever in the Secret/env.
+**Init container** (busybox) — mounts the ConfigMap at `/seed` and the PVC at `/opt/data`;
+gets `LITELLM_BASE_URL` from the Secret. On first boot (file absent) it substitutes the
+placeholder and writes the file; on later boots it leaves the file alone:
+
+```sh
+if [ ! -f /opt/data/config.yaml ]; then
+  sed -e "s|@LITELLM_BASE_URL@|${LITELLM_BASE_URL}|g" \
+    /seed/config.yaml.tmpl > /opt/data/config.yaml
+fi
+```
+
+First boot writes the rendered `config.yaml`; subsequent boots keep Hermes's
+runtime-evolved version. **Consequence:** changing the template (or the operator's
+`LITELLM_BASE_URL`) after first deploy does not affect a running instance — update the
+live file (`hermes config set`) or recreate the PVC.
+
+The router **API key is never written to a file** — it stays in the Secret, is injected
+into the main container as the `LITELLM_API_KEY` env var, and `config.yaml`'s
+`key_env: LITELLM_API_KEY` tells Hermes to read it from there. Exact `config.yaml` key
+syntax (`key_env` or equivalent) is confirmed against Hermes's docs at implementation;
+the principle is fixed: **URL and key never in the public repo.**
 
 ### 5.2 Secret — `hermes-secrets`
 
-Two values:
-- `LITELLM_API_KEY` — the LiteLLM router key (currently in `~/opencode.json`).
+Three values — none committed to git:
+- `LITELLM_BASE_URL` — the LiteLLM router's base URL (from `~/opencode.json`).
+- `LITELLM_API_KEY` — the router API key (from `~/opencode.json`).
 - `API_SERVER_KEY` — the bearer token guarding the `:8642` API (operator-chosen).
 
-Created **out-of-band** by `set-secret` — a script that reads both values from environment
-variables, ensures the `hermes` namespace exists, and applies the Secret idempotently:
+Created **out-of-band** by `set-secret` — a script that reads all three values from
+environment variables, ensures the `hermes` namespace exists, and applies the Secret
+idempotently:
 
 ```sh
 kubectl create secret generic hermes-secrets -n hermes \
+  --from-literal=LITELLM_BASE_URL="${LITELLM_BASE_URL}" \
   --from-literal=LITELLM_API_KEY="${LITELLM_API_KEY}" \
   --from-literal=API_SERVER_KEY="${API_SERVER_KEY}" \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-The Secret is **not** committed and **not** Argo-managed; the `Deployment` references it by
-name and injects both keys as environment variables (`secretKeyRef`).
+The Secret is **not** committed and **not** Argo-managed; the `Deployment` references it
+by name and injects keys as environment variables (`secretKeyRef`).
 
 ### 5.3 Deployment environment
 
-`API_SERVER_ENABLED=true`, `API_SERVER_HOST=0.0.0.0`, `HERMES_DASHBOARD=1`, plus
-`API_SERVER_KEY` and `LITELLM_API_KEY` sourced from `hermes-secrets`.
+- **Init container** env: `LITELLM_BASE_URL` from `hermes-secrets` (for templating §5.1).
+- **Main container** env: `API_SERVER_ENABLED=true`, `API_SERVER_HOST=0.0.0.0`,
+  `HERMES_DASHBOARD=1`, plus `LITELLM_API_KEY` and `API_SERVER_KEY` from `hermes-secrets`.
 
 ---
 
@@ -233,10 +250,13 @@ this cluster (no NetworkPolicy; host firewalld disabled) — no extra configurat
 - **`config.yaml` schema** — the exact key for the env-referenced API key and any other
   mandatory fields are pinned against Hermes's config docs at implementation; the design
   principle (key value never in the ConfigMap) is fixed.
-- **LiteLLM router base URL in a public repo** — the seed `config.yaml` (in the public
-  `apnex/hermes` ConfigMap) will contain the router's base URL. It is an endpoint, not a
-  credential — the API key guards it — but if it should not be public, it can be moved to
-  the env/Secret alongside the key. Decide at spec review.
+- **Generic public deployment template** — the repo is intended as a reusable template
+  others can adopt: all operator-specific values (URL, keys) live in the operator's
+  Secret. The remaining defaults that *are* committed (model name `smart-coder`, the
+  MetalLB `LoadBalancer` + `allow-shared-ip: host` exposure on a single host IP) are
+  deliberately opinionated defaults — adopters whose LiteLLM router uses different model
+  IDs, or who run a non-MetalLB cluster, would override via Kustomize/fork. Worth a
+  conscious review-call before lock-in.
 - **Dashboard auth** — unverified; confirmed at implementation, with the port-forward
   fallback (§6) if it is unauthenticated.
 - **Hermes owns `config.yaml`** after first boot — re-seeding requires updating the live
