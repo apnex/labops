@@ -319,12 +319,12 @@ git commit -m "argo/remove: delete the services ApplicationSet; mapfile loop; --
 # Schema + design: docs/superpowers/specs/2026-05-22-gitops-service-registry-design.md
 #
 # Required (all):  name, type (git|helm), repoURL, revision, namespace
-# Required (git):  path        Required (helm): chart        Optional (helm): values
+# Required (git):  gitPath     Required (helm): chart        Optional (helm): values
 
 - name: podinfo
   type: git
   repoURL: https://github.com/stefanprodan/podinfo
-  path: kustomize
+  gitPath: kustomize
   revision: master
   namespace: podinfo
 ```
@@ -397,7 +397,7 @@ spec:
           valuesObject: {{ .values | toJson }}
         {{- end }}
         {{- else }}
-        path: {{ .path | quote }}
+        path: {{ .gitPath | quote }}
         {{- end }}
 ```
 

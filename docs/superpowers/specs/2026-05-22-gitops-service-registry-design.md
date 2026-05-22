@@ -118,7 +118,7 @@ A top-level YAML list. Each element is one service:
 - name: podinfo
   type: git
   repoURL: https://github.com/stefanprodan/podinfo
-  path: kustomize
+  gitPath: kustomize
   revision: master
   namespace: podinfo
 
@@ -140,7 +140,7 @@ A top-level YAML list. Each element is one service:
 | `repoURL` | yes | both | Git repo URL (`git`) or Helm repository URL (`helm`) |
 | `revision` | yes | both | Git ref — branch / tag / SHA (`git`) — or chart version (`helm`) |
 | `namespace` | yes | both | destination namespace (auto-created) |
-| `path` | yes | `git` | directory within the repo; Argo auto-detects plain manifests / Kustomize / an in-repo chart |
+| `gitPath` | yes | `git` | directory within the *service's* repo (Argo auto-detects plain manifests / Kustomize / an in-repo chart). Named `gitPath`, not `path`, to avoid the Git file generator's reserved `path` parameter |
 | `chart` | yes | `helm` | chart name within the Helm repository |
 | `values` | no | `helm` | inline Helm values (a YAML map) |
 
