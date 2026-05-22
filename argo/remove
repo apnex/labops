@@ -1,26 +1,27 @@
 #!/bin/bash
+## module: argo/remove
+## purpose: tear down Argo CD and the service-registry ApplicationSet
+## inputs:  KUBECONFIG
+## needs:   -
 
-## probably should use argocd CLI to remove apps instead of tearing them out of namespace
-## remove index first
-kubectl -n argocd delete app index
+## delete the service-registry ApplicationSet (cascades to its generated Applications)
+kubectl -n argocd delete applicationset services --ignore-not-found
 
-## clear finalizers and remove remaining apps
-APPS=$(kubectl -n argocd get applications -o json)
-IFS=$'\n'
-for APP in $(echo "${APPS}" | jq -c '.items[]'); do
+## clear finalizers and remove any remaining apps (stuck-app safety net)
+mapfile -t APPLIST < <(kubectl -n argocd get applications -o json 2>/dev/null | jq -c '.items[]')
+for APP in "${APPLIST[@]}"; do
 	NAME=$(echo "${APP}" | jq -r '.metadata.name')
-	echo "${NAME}"
+	echo "removing app [ ${NAME} ]"
 	echo "${APP}" | jq '.metadata.finalizers = []' | kubectl replace -f -
-	kubectl -n argocd delete app "${NAME}"
+	kubectl -n argocd delete app "${NAME}" --ignore-not-found
 done
 
-## delete namespace
-kubectl delete ns argocd
+## delete the namespace
+kubectl delete ns argocd --ignore-not-found
 
-## remove argocd cli
+## remove the argocd CLI
 CMDPATH=$(command -v argocd)
-if [[ -n $CMDPATH ]]; then
-	echo "Removing [ ${CMDPATH} ]"
-	rm ${CMDPATH}
-	exit
+if [[ -n ${CMDPATH} ]]; then
+	echo "removing [ ${CMDPATH} ]"
+	rm -f "${CMDPATH}"
 fi
