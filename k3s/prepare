@@ -1,0 +1,62 @@
+#!/bin/bash
+## module: k3s/prepare
+## purpose: prepare the host OS for k3s (the only OS-specific module)
+## inputs:  -
+## needs:   -
+
+## OS identity (log only)
+if [[ -r /etc/os-release ]]; then
+	# shellcheck disable=SC1091
+	. /etc/os-release
+	echo "[ K3S/PREPARE ] host [ ${PRETTY_NAME:-unknown} ]"
+else
+	echo "[ K3S/PREPARE ] WARNING: /etc/os-release not found — unrecognised OS" 1>&2
+fi
+
+## required commands
+for bin in curl ip jq; do
+	if ! command -v "${bin}" >/dev/null 2>&1; then
+		echo "[ K3S/PREPARE ] ERROR: required command [ ${bin} ] not found — install it and re-run" 1>&2
+		exit 1
+	fi
+done
+echo "[ K3S/PREPARE ] selinux [ $(getenforce 2>/dev/null || echo n/a) ]"
+
+## detect init system
+if command -v systemctl >/dev/null 2>&1; then
+	INIT="systemd"
+elif command -v rc-update >/dev/null 2>&1; then
+	INIT="openrc"
+else
+	INIT="unknown"
+fi
+echo "[ K3S/PREPARE ] init [ ${INIT} ]"
+
+## init-system specific prep
+case "${INIT}" in
+	systemd)
+		## Rocky / CentOS / Fedora — disable firewalld (interferes with flannel CNI)
+		FW_WAS_ACTIVE="no"
+		systemctl is-active --quiet firewalld 2>/dev/null && FW_WAS_ACTIVE="yes"
+		systemctl disable --now firewalld 2>/dev/null
+		systemctl mask firewalld 2>/dev/null
+		echo "[ K3S/PREPARE ] firewalld [ disabled + masked ]"
+		## firewalld-integrated Docker must restart to re-establish its iptables rules;
+		## gated on firewalld having been active so idempotent re-runs don't bounce Docker
+		if [[ "${FW_WAS_ACTIVE}" == "yes" ]] && systemctl is-active --quiet docker 2>/dev/null; then
+			echo "[ K3S/PREPARE ] firewalld was active — restarting docker to re-establish iptables"
+			systemctl restart docker
+		else
+			echo "[ K3S/PREPARE ] docker restart not required"
+		fi
+		;;
+	openrc)
+		## Alpine — k3s requires the cgroups service under OpenRC
+		rc-update add cgroups boot 2>/dev/null
+		rc-service cgroups start 2>/dev/null
+		echo "[ K3S/PREPARE ] cgroups [ enabled ]"
+		;;
+	*)
+		echo "[ K3S/PREPARE ] WARNING: unknown init system — no host prep applied" 1>&2
+		;;
+esac
