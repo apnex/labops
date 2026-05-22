@@ -31,8 +31,9 @@ Hermes deployment only. It is a single, cohesive capability — one spec, one pl
   `smart-coder`.
 - Persistent: skills, sessions, and memory survive pod restarts.
 - **The `apnex/hermes` repo is a generic, reusable public deployment template.** No
-  operator-specific values are committed; all per-deployment specifics (the LiteLLM
-  router's base URL, API key, API server key) live in the operator's Secret.
+  operator-specific values are committed — all per-deployment specifics (LiteLLM base URL,
+  model, key, API server key) live in the operator's Secret; cluster-specific exposure
+  (e.g. MetalLB LoadBalancer) lives as an overlay in the operator's own GitOps repo.
 
 ### Non-Goals
 - **Messaging-platform gateways** (Telegram / Discord / Slack / …) — not deployed.
@@ -56,9 +57,9 @@ Hermes deployment only. It is a single, cohesive capability — one spec, one pl
 | 6 | Image | Pinned — `nousresearch/hermes-agent:v2026.5.16` |
 | 7 | Interfaces | API `:8642` + dashboard `:9119`; no messaging gateways |
 | 8 | `config.yaml` | Seeded via ConfigMap + init container (seed-if-absent); Hermes owns it after first boot |
-| 9 | Model | Default `smart-coder` (Claude Opus 4.7 via the LiteLLM router) |
-| 10 | Secrets | Manually-applied `hermes-secrets` Secret with **three** values — `LITELLM_BASE_URL`, `LITELLM_API_KEY`, `API_SERVER_KEY` — created out-of-band by the `set-secret` script from env vars; not in git, not Argo-managed |
-| 11 | Exposure | One MetalLB LoadBalancer Service, `allow-shared-ip: host`, on the NUC IP `192.168.1.250`, ports 8642 + 9119 |
+| 9 | Model | Operator-supplied via `LITELLM_MODEL` in the Secret (per their router's naming); this deployment uses `smart-coder` (Claude Opus 4.7) |
+| 10 | Secrets | Manually-applied `hermes-secrets` Secret with **four** values — `LITELLM_BASE_URL`, `LITELLM_MODEL`, `LITELLM_API_KEY`, `API_SERVER_KEY` — created out-of-band by the `set-secret` script from env vars; not in git, not Argo-managed |
+| 11 | Exposure | Hermes repo ships a portable `ClusterIP` Service; a separate `vip-hermes` MetalLB LoadBalancer overlay (`allow-shared-ip: host`, NUC IP `192.168.1.250`) lives in `labops/hermes-vip/` and is registered as a second entry in `services.yaml` |
 | 12 | TLS | Plain HTTP (LAN); the API is guarded by the `API_SERVER_KEY` bearer token |
 
 ---
@@ -95,7 +96,10 @@ apnex/hermes/
 No `Namespace` manifest — Argo CD's `CreateNamespace=true` handles it. No `CLAUDE.md` —
 this is a deployment-artifact repo, not an agent-development repo.
 
-### 4.2 Registry entry (added to `labops/argo/services.yaml`)
+### 4.2 Registry entries (added to `labops/argo/services.yaml`)
+
+Two entries — the Hermes deployment itself (in `apnex/hermes`), and the local MetalLB
+LoadBalancer overlay (in `apnex/labops`):
 
 ```yaml
 - name: hermes
@@ -103,6 +107,13 @@ this is a deployment-artifact repo, not an agent-development repo.
   repoURL: https://github.com/apnex/hermes
   gitPath: manifests
   revision: main
+  namespace: hermes
+
+- name: hermes-vip
+  type: git
+  repoURL: https://github.com/apnex/labops
+  gitPath: hermes-vip
+  revision: master
   namespace: hermes
 ```
 
@@ -116,7 +127,7 @@ this is a deployment-artifact repo, not an agent-development repo.
   and main containers.
 - **`ConfigMap` hermes-config** — holds the seed `config.yaml`.
 - **`Secret` hermes-secrets** — the two keys; created out-of-band (§5.2), referenced by name.
-- **`Service` hermes** — `LoadBalancer` (§6).
+- **`Service` hermes** — `ClusterIP`; the `vip-hermes` MetalLB LoadBalancer overlay lives in `labops/hermes-vip/` (§6).
 
 ---
 
@@ -124,11 +135,12 @@ this is a deployment-artifact repo, not an agent-development repo.
 
 ### 5.1 `config.yaml` — templated, seeded, then Hermes-owned
 
-The LiteLLM router's **base URL** is operator-specific (each adopter has a different
-router), so it does not live in the public repo. The ConfigMap holds a **template**; the
-init container substitutes the URL at first boot from a Secret-sourced env var. Hermes
-then reads and *mutates* `/opt/data/config.yaml` at runtime, so the file lives on the PVC,
-not on a mounted ConfigMap.
+The LiteLLM router's **base URL** and **default model name** are both operator-specific —
+each adopter's router has a different URL and exposes different model IDs. To keep the
+public repo generic, neither value lives in the repo; both come from the operator's
+Secret. The ConfigMap holds a **template**; the init container substitutes both at first
+boot. Hermes then reads and *mutates* `/opt/data/config.yaml` at runtime, so the file
+lives on the PVC, not on a mounted ConfigMap.
 
 **ConfigMap `hermes-config`** — holds `config.yaml.tpl`:
 
@@ -136,46 +148,51 @@ not on a mounted ConfigMap.
 model:
   provider: custom
   base_url: @LITELLM_BASE_URL@
-  default: smart-coder
+  default: @LITELLM_MODEL@
   key_env: LITELLM_API_KEY      # Hermes reads the key from this env var at runtime
 ```
 
 **Init container** (busybox) — mounts the ConfigMap at `/seed` and the PVC at `/opt/data`;
-gets `LITELLM_BASE_URL` from the Secret. On first boot (file absent) it substitutes the
-placeholder and writes the file; on later boots it leaves the file alone:
+gets `LITELLM_BASE_URL` and `LITELLM_MODEL` from the Secret. On first boot (file absent)
+it substitutes the placeholders and writes the file; on later boots it leaves the file
+alone:
 
 ```sh
 if [ ! -f /opt/data/config.yaml ]; then
   sed -e "s|@LITELLM_BASE_URL@|${LITELLM_BASE_URL}|g" \
+      -e "s|@LITELLM_MODEL@|${LITELLM_MODEL}|g" \
     /seed/config.yaml.tpl > /opt/data/config.yaml
 fi
 ```
 
 First boot writes the rendered `config.yaml`; subsequent boots keep Hermes's
 runtime-evolved version. **Consequence:** changing the template (or the operator's
-`LITELLM_BASE_URL`) after first deploy does not affect a running instance — update the
-live file (`hermes config set`) or recreate the PVC.
+`LITELLM_BASE_URL` / `LITELLM_MODEL`) after first deploy does not affect a running
+instance — update the live file (`hermes config set`) or recreate the PVC.
 
 The router **API key is never written to a file** — it stays in the Secret, is injected
 into the main container as the `LITELLM_API_KEY` env var, and `config.yaml`'s
 `key_env: LITELLM_API_KEY` tells Hermes to read it from there. Exact `config.yaml` key
 syntax (`key_env` or equivalent) is confirmed against Hermes's docs at implementation;
-the principle is fixed: **URL and key never in the public repo.**
+the principle is fixed: **URL, model, and key never in the public repo.**
 
 ### 5.2 Secret — `hermes-secrets`
 
-Three values — none committed to git:
+Four values — none committed to git:
 - `LITELLM_BASE_URL` — the LiteLLM router's base URL (from `~/opencode.json`).
+- `LITELLM_MODEL` — the default model ID per the operator's router (this deployment uses
+  `smart-coder`).
 - `LITELLM_API_KEY` — the router API key (from `~/opencode.json`).
 - `API_SERVER_KEY` — the bearer token guarding the `:8642` API (operator-chosen).
 
-Created **out-of-band** by `set-secret` — a script that reads all three values from
+Created **out-of-band** by `set-secret` — a script that reads all four values from
 environment variables, ensures the `hermes` namespace exists, and applies the Secret
 idempotently:
 
 ```sh
 kubectl create secret generic hermes-secrets -n hermes \
   --from-literal=LITELLM_BASE_URL="${LITELLM_BASE_URL}" \
+  --from-literal=LITELLM_MODEL="${LITELLM_MODEL}" \
   --from-literal=LITELLM_API_KEY="${LITELLM_API_KEY}" \
   --from-literal=API_SERVER_KEY="${API_SERVER_KEY}" \
   --dry-run=client -o yaml | kubectl apply -f -
@@ -186,7 +203,8 @@ by name and injects keys as environment variables (`secretKeyRef`).
 
 ### 5.3 Deployment environment
 
-- **Init container** env: `LITELLM_BASE_URL` from `hermes-secrets` (for templating §5.1).
+- **Init container** env: `LITELLM_BASE_URL` + `LITELLM_MODEL` from `hermes-secrets` (for
+  template substitution §5.1).
 - **Main container** env: `API_SERVER_ENABLED=true`, `API_SERVER_HOST=0.0.0.0`,
   `HERMES_DASHBOARD=1`, plus `LITELLM_API_KEY` and `API_SERVER_KEY` from `hermes-secrets`.
 
@@ -194,18 +212,35 @@ by name and injects keys as environment variables (`secretKeyRef`).
 
 ## 6. Exposure & Networking
 
-One `Service` of type `LoadBalancer` with `metallb.universe.tf/allow-shared-ip: host`, so
-MetalLB places it on the single NUC IP **`192.168.1.250`** (shared with the Argo CD vip).
-Two ports:
-- `192.168.1.250:8642` → the OpenAI-compatible API.
-- `192.168.1.250:9119` → the web dashboard.
+The hermes repo ships a **portable `ClusterIP` Service** named `hermes` in the `hermes`
+namespace, exposing two ports against the Hermes pod:
+- `:8642` — the OpenAI-compatible API.
+- `:9119` — the web dashboard.
 
-Plain **HTTP** on the LAN. The **API** is guarded by the `API_SERVER_KEY` bearer token. The
-**dashboard's** own auth posture is verified at implementation; if it is unauthenticated
-and LAN-exposure is unwanted, the dashboard port is dropped from the LoadBalancer and
-reached via `kubectl port-forward` instead — the API keeps the LoadBalancer either way.
+That is all the public repo carries — no cluster-specific exposure assumptions. Adopters
+without MetalLB simply don't apply the overlay below; they have a portable ClusterIP they
+can front with their own choice of Ingress / NodePort / port-forward.
 
-**Egress:** Hermes calls out to the remote LiteLLM router over HTTPS. Pod egress works on
+**LAN access on this cluster** — a small **MetalLB LoadBalancer overlay** lives in
+`labops/hermes-vip/`. It's a single `Service` manifest (`vip-hermes`) in the same
+`hermes` namespace, selecting the same Hermes pods, with the
+`metallb.universe.tf/allow-shared-ip: host` annotation. MetalLB places it on the NUC IP
+`192.168.1.250` (shared with the Argo CD vip):
+- `192.168.1.250:8642` — the API on the LAN.
+- `192.168.1.250:9119` — the dashboard on the LAN.
+
+This overlay is registered as a **second entry** in `labops/argo/services.yaml`
+(`hermes-vip`), so Argo CD manages it alongside the Hermes deployment itself. Two
+Services, same pods — `hermes` (ClusterIP) for in-cluster traffic, `vip-hermes`
+(LoadBalancer) for LAN.
+
+Plain HTTP on the LAN. The **API** is guarded by the `API_SERVER_KEY` bearer token. The
+**dashboard's** auth posture is verified at implementation; if unauthenticated and LAN
+exposure is unwanted, the dashboard port is dropped from `vip-hermes` (reached via
+`kubectl port-forward` on the ClusterIP instead) — the API keeps the LoadBalancer either
+way.
+
+**Egress** — Hermes calls out to the remote LiteLLM router over HTTPS. Pod egress works on
 this cluster (no NetworkPolicy; host firewalld disabled) — no extra configuration.
 
 ---
@@ -215,9 +250,10 @@ this cluster (no NetworkPolicy; host firewalld disabled) — no extra configurat
 ### Data flow
 1. *One-time:* run `set-secret` with `LITELLM_API_KEY` + `API_SERVER_KEY` in the env →
    creates `hermes-secrets`.
-2. Add the `hermes` entry to `labops/argo/services.yaml`, commit + push → the `services`
-   ApplicationSet generates a `hermes` Application → Argo CD syncs the `apnex/hermes`
-   manifests.
+2. Add the `hermes` and `hermes-vip` entries to `labops/argo/services.yaml` (and the
+   `labops/hermes-vip/service.yaml` overlay manifest), commit + push → the `services`
+   ApplicationSet generates two Applications → Argo CD syncs the Hermes manifests and the
+   MetalLB LoadBalancer overlay.
 3. The pod starts: init container seeds `config.yaml` (first boot only) → `hermes gateway
    run` reads config + the env keys → serves `:8642` and `:9119`.
 4. Steady state: a client calls `:8642` with the bearer token → Hermes's agent loop →
@@ -238,10 +274,11 @@ this cluster (no NetworkPolicy; host firewalld disabled) — no extra configurat
 ### Verification
 - Manifests — `kubectl apply --dry-run`; the `set-secret` script — `shellcheck`.
 - The `Deployment` carries liveness + readiness probes on `GET /health` (`:8642`).
-- **Acceptance (end-to-end):** `set-secret` applied → registry entry added → Argo generates
-  `hermes`, syncs Healthy, the pod reaches Ready → call `:8642/v1/models` and a small
-  `:8642/v1/chat/completions` with the bearer token and confirm a response — exercising the
-  full chain Hermes → router → `smart-coder` — and load the dashboard at `:9119`.
+- **Acceptance (end-to-end):** `set-secret` applied → registry entries added → Argo
+  generates `hermes` + `hermes-vip`, both sync Healthy, the pod reaches Ready → call
+  `192.168.1.250:8642/v1/models` and a small `/v1/chat/completions` with the bearer token
+  and confirm a response — exercising the full chain Hermes → router → `smart-coder` — and
+  load the dashboard at `192.168.1.250:9119`.
 
 ---
 
@@ -250,13 +287,12 @@ this cluster (no NetworkPolicy; host firewalld disabled) — no extra configurat
 - **`config.yaml` schema** — the exact key for the env-referenced API key and any other
   mandatory fields are pinned against Hermes's config docs at implementation; the design
   principle (key value never in the ConfigMap) is fixed.
-- **Generic public deployment template** — the repo is intended as a reusable template
-  others can adopt: all operator-specific values (URL, keys) live in the operator's
-  Secret. The remaining defaults that *are* committed (model name `smart-coder`, the
-  MetalLB `LoadBalancer` + `allow-shared-ip: host` exposure on a single host IP) are
-  deliberately opinionated defaults — adopters whose LiteLLM router uses different model
-  IDs, or who run a non-MetalLB cluster, would override via Kustomize/fork. Worth a
-  conscious review-call before lock-in.
+- **Generic public deployment template** — the repo carries **no operator-specific
+  values**: URL + model + keys all live in the operator's Secret; cluster-specific
+  exposure (MetalLB LoadBalancer) lives as an overlay in the operator's GitOps repo. The
+  only committed defaults are the namespace name (`hermes`) and the pod's resource sizes
+  — sensible defaults; adopters who need different just edit. The repo is fully reusable
+  without forking for the common case.
 - **Dashboard auth** — unverified; confirmed at implementation, with the port-forward
   fallback (§6) if it is unauthenticated.
 - **Hermes owns `config.yaml`** after first boot — re-seeding requires updating the live
