@@ -1,4 +1,35 @@
 #!/bin/bash
+## module: k3s/remove
+## purpose: tear down k3s and reset the host for a clean reinstall
+## inputs:  $1=--purge (optional — also delete local-path PV data)
+## needs:   -
 
-## perform k3s uninstall
-/usr/local/bin/k3s-uninstall.sh
+PURGE="no"
+[[ "${1:-}" == "--purge" ]] && PURGE="yes"
+
+## uninstall k3s
+if [[ -x /usr/local/bin/k3s-uninstall.sh ]]; then
+	echo "[ K3S/REMOVE ] running k3s-uninstall.sh"
+	/usr/local/bin/k3s-uninstall.sh
+	## k3s-uninstall.sh flushes iptables — restart Docker so it re-establishes its rules
+	if systemctl is-active --quiet docker 2>/dev/null; then
+		echo "[ K3S/REMOVE ] restarting docker to re-establish iptables"
+		systemctl restart docker
+	fi
+else
+	echo "[ K3S/REMOVE ] k3s-uninstall.sh not found — k3s not installed"
+fi
+
+## remove the kubeconfig
+rm -f /root/.kube/config
+echo "[ K3S/REMOVE ] removed /root/.kube/config"
+
+## local-path PV data
+if [[ -d /opt/local-path-provisioner ]]; then
+	if [[ "${PURGE}" == "yes" ]]; then
+		rm -rf /opt/local-path-provisioner
+		echo "[ K3S/REMOVE ] purged /opt/local-path-provisioner"
+	else
+		echo "[ K3S/REMOVE ] kept PV data at /opt/local-path-provisioner (pass --purge to delete)"
+	fi
+fi
