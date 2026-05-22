@@ -1,21 +1,34 @@
 #!/bin/bash
-## kubectl healthcheck
-echo "[[ ${KUBECONFIG} ]]"
-HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-while [[ -z ${HEALTHY} ]]; do
-	echo "socket [ localhost:6443 ] api [ no response ]"
-	sleep 10
-	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-	echo "BEFORE TEST: ${HEALTHY}"
-	kubectl -n kube-system get pods
-	echo "AFTER TEST: ${HEALTHY}"
-done
-echo "socket [ localhost:6443 ] api [ healthy ]"
+## module: storage/install
+## purpose: ensure a local-path provisioner and a 'standard' StorageClass exist
+## inputs:  KUBECONFIG, LABOPS_ROOT
+## needs:   healthcheck/k8s-local
 
-## commence
-mkdir -p /opt/local-path-provisioner
-kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+## ── labops module resolver ───────────────────────────────────────────
+LABOPS_BASE="${LABOPS_BASE:-https://labops.sh}"
+command -v run >/dev/null 2>&1 || run() {
+	local module="$1"; shift
+	if [[ -n "${LABOPS_ROOT:-}" && -f "${LABOPS_ROOT}/${module}" ]]; then
+		bash "${LABOPS_ROOT}/${module}" "$@"
+	else
+		curl -fsSL "${LABOPS_BASE}/${module}" | bash -s -- "$@"
+	fi
+}
 
+## wait for the API
+run healthcheck/k8s-local
+
+## detect an existing rancher.io/local-path provisioner (k3s bundles one)
+if kubectl get storageclass -o jsonpath='{.items[*].provisioner}' 2>/dev/null \
+	| tr ' ' '\n' | grep -qx 'rancher.io/local-path'; then
+	echo "[ STORAGE/INSTALL ] local-path provisioner already present — skipping deploy"
+else
+	echo "[ STORAGE/INSTALL ] deploying rancher local-path-provisioner"
+	mkdir -p /opt/local-path-provisioner
+	kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+fi
+
+## always ensure the 'standard' StorageClass (labops apps reference it by name)
 read -r -d '' LOCALSTORAGE <<EOF
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -26,4 +39,5 @@ reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer
 EOF
 
-printf "${LOCALSTORAGE}" | kubectl apply -f -
+printf '%s\n' "${LOCALSTORAGE}"
+printf '%s\n' "${LOCALSTORAGE}" | kubectl apply -f -
