@@ -1,16 +1,25 @@
 #!/bin/bash
-## kubectl healthcheck
-HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-while [[ -z ${HEALTHY} ]]; do
-	echo "socket [ localhost:6443 ] api [ no response ]"
-	sleep 10
-	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-done
-echo "socket [ localhost:6443 ] api [ healthy ]"
+## module: metrics/install
+## purpose: install metrics-server and patch it for kubelet TLS
+## inputs:  KUBECONFIG, LABOPS_ROOT
+## needs:   healthcheck/k8s-local, metrics/patch
+
+## ── labops module resolver ───────────────────────────────────────────
+LABOPS_BASE="${LABOPS_BASE:-https://labops.sh}"
+command -v run >/dev/null 2>&1 || run() {
+	local module="$1"; shift
+	if [[ -n "${LABOPS_ROOT:-}" && -f "${LABOPS_ROOT}/${module}" ]]; then
+		bash "${LABOPS_ROOT}/${module}" "$@"
+	else
+		curl -fsSL "${LABOPS_BASE}/${module}" | bash -s -- "$@"
+	fi
+}
+
+## wait for the API
+run healthcheck/k8s-local
 
 ## install metrics server
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-## patch metrics server
-#This ensures that metric server can securely connect to localhost:443
-curl -fsSL https://labops.sh/metrics/patch | sh
+## patch metrics server — secure the kubelet connection
+run metrics/patch
