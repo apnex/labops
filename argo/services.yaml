@@ -1,0 +1,13 @@
+# labops service registry — each entry deploys one service into the cluster.
+# Add an entry, commit + push — the Argo CD 'services' ApplicationSet deploys it.
+# Schema + design: docs/superpowers/specs/2026-05-22-gitops-service-registry-design.md
+#
+# Required (all):  name, type (git|helm), repoURL, revision, namespace
+# Required (git):  path        Required (helm): chart        Optional (helm): values
+
+- name: podinfo
+  type: git
+  repoURL: https://github.com/stefanprodan/podinfo
+  path: kustomize
+  revision: master
+  namespace: podinfo
