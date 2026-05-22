@@ -26,6 +26,6 @@ run healthcheck/net-ssl "${ARGOCD_SERVER}"
 curl -ksLo /usr/local/bin/argocd "https://${ARGOCD_SERVER}/download/argocd-linux-amd64"
 chmod +x /usr/local/bin/argocd
 
-## verify
+## verify the CLI is installed
 argocd login --core
-argocd version --insecure
+argocd version --client

@@ -153,9 +153,9 @@ run healthcheck/net-ssl "${ARGOCD_SERVER}"
 curl -ksLo /usr/local/bin/argocd "https://${ARGOCD_SERVER}/download/argocd-linux-amd64"
 chmod +x /usr/local/bin/argocd
 
-## verify
+## verify the CLI is installed
 argocd login --core
-argocd version --insecure
+argocd version --client
 ```
 
 Changes from the original: the `2>/dev/tty` redirects are gone (they break in non-interactive runs — no controlling terminal); the dead `ARGOCD_THUMBPRINT` capture is gone; the CLI installs to `/usr/local/bin` (was `/usr/bin`); the module header is added; and the two healthcheck calls now go through the inlined `run` resolver with positional args (both `healthcheck/k8s-external-ip` and `healthcheck/net-ssl` accept `$1`/`$2`) instead of the bare `curl … | bash` pattern.
