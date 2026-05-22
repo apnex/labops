@@ -1,0 +1,62 @@
+#!/bin/bash
+## module: k3s/verify
+## purpose: assert the cluster reached its intended end state
+## inputs:  KUBECONFIG, K3S_STORAGE, K3S_METRICS
+## needs:   -
+
+K3S_STORAGE="${K3S_STORAGE:-on}"
+K3S_METRICS="${K3S_METRICS:-on}"
+FAIL=0
+
+retry() {  ## retry <attempts> <sleep-seconds> <command...>
+	local n="$1" s="$2"; shift 2
+	local i
+	for ((i = 1; i <= n; i++)); do
+		"$@" >/dev/null 2>&1 && return 0
+		sleep "${s}"
+	done
+	return 1
+}
+
+check() {  ## check <label> <command...>
+	local label="$1"; shift
+	if "$@"; then
+		echo "[ K3S/VERIFY ] OK   — ${label}"
+	else
+		echo "[ K3S/VERIFY ] FAIL — ${label}" 1>&2
+		FAIL=1
+	fi
+}
+
+node_ready() {
+	local out
+	out="$(kubectl get nodes --no-headers 2>/dev/null)" || return 1
+	[[ -n "${out}" ]] || return 1
+	! echo "${out}" | awk '{print $2}' | grep -qvw 'Ready'
+}
+
+pods_ok() {
+	local out
+	out="$(kubectl -n kube-system get pods --no-headers 2>/dev/null)" || return 1
+	[[ -n "${out}" ]] || return 1
+	! echo "${out}" | awk '{print $3}' | grep -qvE '^(Running|Completed)$'
+}
+
+check "node(s) Ready"            retry 24 5 node_ready
+check "kube-system pods healthy" retry 24 5 pods_ok
+check "metallb controller Ready" retry 24 5 kubectl -n metallb-system rollout status deploy/controller --timeout=5s
+check "metallb IPAddressPool"    retry 6  5 kubectl -n metallb-system get ipaddresspool host-pool
+check "metallb L2Advertisement"  retry 6  5 kubectl -n metallb-system get l2advertisement host-l2
+
+if [[ "${K3S_STORAGE}" == "on" ]]; then
+	check "StorageClass standard" retry 6 5 kubectl get storageclass standard
+fi
+if [[ "${K3S_METRICS}" == "on" ]]; then
+	check "metrics-server top node" retry 24 5 kubectl top node
+fi
+
+if [[ "${FAIL}" -ne 0 ]]; then
+	echo "[ K3S/VERIFY ] cluster verification FAILED" 1>&2
+	exit 1
+fi
+echo "[ K3S/VERIFY ] cluster verification PASSED"
