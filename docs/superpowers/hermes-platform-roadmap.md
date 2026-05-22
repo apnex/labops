@@ -110,6 +110,10 @@ _Update this section as work proceeds across sessions._
 - **2026-05-22 (later 4)** — Hermes deployment design brainstormed; spec written and
   committed: `docs/superpowers/specs/2026-05-22-hermes-deployment-design.md`. Awaiting
   spec review, then the implementation plan.
+- **2026-05-22 (later 5)** — Spec approved (with refinements: `LITELLM_BASE_URL` +
+  `LITELLM_MODEL` moved to the Secret, repo ships portable `ClusterIP` with a `vip-hermes`
+  MetalLB overlay in `labops/hermes-vip/`). **Implementation plan written:**
+  `docs/superpowers/plans/2026-05-22-hermes-deployment.md`. Next: execution.
 
 ## 9. Phase A Findings (research, 2026-05-22)
 
