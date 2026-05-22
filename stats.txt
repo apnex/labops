@@ -2,11 +2,6 @@
 TTL RX = 100 MBYTE
 TTL TX = 1 MBYTE
 
-## labops.sh/rke/install
-
-TTL RX = 840 MBYTE
-TTL TX = 4 MBYTE
-
 ## others
 
 ## yum install -y git 

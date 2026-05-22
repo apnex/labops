@@ -1,4 +1,3 @@
-cp kube_config_rke.config.yaml ~/.kube/config
   template:
     metadata:
       labels:
@@ -7,9 +6,6 @@ cp kube_config_rke.config.yaml ~/.kube/config
         "cluster-autoscaler.kubernetes.io/safe-to-evict": "false"
 
 kubernetes: rancher/hyperkube:v1.10.3-rancher2
-
-curl -Lo /usr/local/bin/rke https://github.com/rancher/rke/releases/latest/download/rke_linux-amd64
-
 
 kubectl api-resources --verbs=list --namespaced -o name \
   | xargs -n 1 kubectl get --show-kind --ignore-not-found -n argocd

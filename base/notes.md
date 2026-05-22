@@ -14,9 +14,6 @@ delete ns
 
 ## Update README to include docker prep
 
-## build WITH metrics server
--- RKE config
-
 ## containerize CLIs
 -- git
 -- jid
