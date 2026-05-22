@@ -197,10 +197,13 @@ spec:
 
 ### 4.3 `argo/install` — edited
 
-Two changes: (1) apply `argo/services.appset.yaml` in place of `argo/app.index.yaml` as
+Three changes: (1) apply `argo/services.appset.yaml` in place of `argo/app.index.yaml` as
 the final step; (2) make namespace creation idempotent —
 `kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -` — so
-re-runs don't error. Argo CD continues to install from the `stable` branch (decision #11).
+re-runs don't error; (3) install Argo CD with `kubectl apply --server-side
+--force-conflicts` — the ApplicationSet CRD exceeds client-side apply's 262144-byte
+last-applied-configuration annotation limit. Argo CD installs from the `stable` branch
+(decision #11).
 
 ### 4.4 `argo/` install-script remediation
 

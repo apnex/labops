@@ -8,8 +8,9 @@
 ## namespace (idempotent)
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 
-## install Argo CD (stable channel)
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+## install Argo CD (stable channel) — server-side apply: the ApplicationSet CRD
+## exceeds client-side apply's 262144-byte last-applied-configuration annotation limit
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 ## wait for the ApplicationSet CRD to register before applying our ApplicationSet
 kubectl wait --for=condition=established --timeout=60s crd/applicationsets.argoproj.io
