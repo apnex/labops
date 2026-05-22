@@ -1,19 +1,16 @@
 #!/bin/bash
+## module: k3s/runonce.sh
+## purpose: VM first-boot shim — run the k3s host stack, then signal completion
+## inputs:  -
+## needs:   k3s/up
 
-## Init
-exec &> >(tee -a /root/startup.log)
+LABOPS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [[ -f "${LABOPS_ROOT}/k3s/up" ]]; then
+	bash "${LABOPS_ROOT}/k3s/up"
+else
+	curl -fsSL "${LABOPS_BASE:-https://labops.sh}/k3s/up" | bash
+fi
 
-## Stage 1+2
-curl -fsSL http://labops.sh/k3s/install | sh
-echo "[[[ Completed Evolution: Stage 2 ]]]"
-
-## Stage 3
-export KUBECONFIG=/root/.kube/config
-curl -fsSL http://labops.sh/metallb/install | sh
-curl -fsSL http://labops.sh/metallb/prepare | sh
-echo "[[[ Completed Evolution: Stage 3 ]]]"
-
-## Done
+## VM-stage completion sentinel (detailed log is /root/k3s-install.log)
 echo "1" > /root/startup.done
-
-exit
+exit 0
