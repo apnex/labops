@@ -8,10 +8,10 @@
 
 ## 1. Goal
 
-Deploy a **persistent Hermes agent** (`github.com/nousresearch/hermes-agent`) on the NUC's
-k3s cluster, **fully GitOps-managed** through Argo CD. Hermes runs as an agent on the
-**kagent** runtime, and calls a remote OpenAI-compatible **LiteLLM router** for LLM
-inference.
+Deploy a **persistent Hermes agent** (`github.com/NousResearch/hermes-agent`) on the NUC's
+k3s cluster, **fully GitOps-managed** through Argo CD. Hermes runs as a **standalone
+deployment** (Phase A confirmed it is a self-contained application, not a kagent agent)
+and calls a remote OpenAI-compatible **LiteLLM router** for LLM inference.
 
 ## 2. Foundation already in place (Layer 0)
 
@@ -102,6 +102,11 @@ _Update this section as work proceeds across sessions._
   (§9): verified there is **no real integration path** and no value in integrating for the
   Hermes goal. Scope strongly points to **Hermes standalone**; kagent only if wanted as a
   separate platform on its own merits.
+- **2026-05-22 (later 3)** — **SCOPE SETTLED.** Build GitOps-deployed **Hermes standalone**
+  in its **own dedicated repo** (separate from `labops`). **kagent parked** — kept as a
+  separate future effort to brainstorm on its own merits, not dropped. Now brainstorming
+  the Hermes design (§3/§5/§6 above are the superseded original hypothesis — this log is
+  the authoritative current state).
 
 ## 9. Phase A Findings (research, 2026-05-22)
 
