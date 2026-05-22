@@ -1,15 +1,32 @@
 #!/bin/bash
+## module: metallb/install
+## purpose: install MetalLB (native mode) at the latest release
+## inputs:  KUBECONFIG, LABOPS_ROOT, METALLB_VERSION (optional pin override)
+## needs:   healthcheck/k8s-local
 
-## kubectl healthcheck
-echo "[[ ${KUBECONFIG} ]]"
-HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-while [ -z "${HEALTHY}" ]; do
-	echo "socket [ localhost:6443 ] api [ no response ]"
-	sleep 10
-	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-done
-echo "socket [ localhost:6443 ] api [ healthy ]"
+## ── labops module resolver ───────────────────────────────────────────
+LABOPS_BASE="${LABOPS_BASE:-https://labops.sh}"
+command -v run >/dev/null 2>&1 || run() {
+	local module="$1"; shift
+	if [[ -n "${LABOPS_ROOT:-}" && -f "${LABOPS_ROOT}/${module}" ]]; then
+		bash "${LABOPS_ROOT}/${module}" "$@"
+	else
+		curl -fsSL "${LABOPS_BASE}/${module}" | bash -s -- "$@"
+	fi
+}
 
-## install metallb
-# https://metallb.universe.tf/installation/
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.10/config/manifests/metallb-native.yaml
+## wait for the API
+run healthcheck/k8s-local
+
+## resolve the MetalLB version (latest release unless pinned via METALLB_VERSION)
+METALLB_VERSION="${METALLB_VERSION:-$(curl -fsSL https://api.github.com/repos/metallb/metallb/releases/latest \
+	| sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -1)}"
+if [[ -z "${METALLB_VERSION}" ]]; then
+	echo "[ METALLB/INSTALL ] ERROR: could not resolve latest MetalLB release" 1>&2
+	exit 1
+fi
+echo "[ METALLB/INSTALL ] version [ ${METALLB_VERSION} ]"
+
+## install MetalLB — native mode (L2, no BGP)
+## note: strictARP is only required for IPVS kube-proxy; k3s defaults to iptables — not applicable
+kubectl apply -f "https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml"
