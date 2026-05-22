@@ -948,8 +948,10 @@ sudo ./k3s/remove --purge    # also deletes /opt/local-path-provisioner
 
 ## Verify anytime
 
+As root (the kubeconfig lives at `/root/.kube/config`):
+
 ```
-sudo KUBECONFIG=/root/.kube/config ./k3s/verify
+./k3s/verify
 ```
 
 ## Prerequisites
