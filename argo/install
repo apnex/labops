@@ -1,6 +1,18 @@
 #!/bin/bash
-# https://argoproj.github.io/argo-cd/getting_started/
+## module: argo/install
+## purpose: install Argo CD and the labops service-registry ApplicationSet
+## inputs:  KUBECONFIG
+## needs:   -
+# https://argo-cd.readthedocs.io/en/stable/getting_started/
 
-kubectl create namespace argocd
+## namespace (idempotent)
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+
+## install Argo CD (stable channel)
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-kubectl apply -n argocd -f https://labops.sh/argo/app.index.yaml
+
+## wait for the ApplicationSet CRD to register before applying our ApplicationSet
+kubectl wait --for=condition=established --timeout=60s crd/applicationsets.argoproj.io
+
+## apply the labops service-registry ApplicationSet
+kubectl apply -n argocd -f https://labops.sh/argo/services.appset.yaml
