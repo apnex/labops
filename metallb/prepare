@@ -1,23 +1,35 @@
 #!/bin/bash
+## module: metallb/prepare
+## purpose: configure MetalLB L2 to advertise the host IP for LoadBalancer services
+## inputs:  KUBECONFIG, LABOPS_ROOT
+## needs:   healthcheck/k8s-local, healthcheck/k8s-deployment-ready
 
-## kubectl healthcheck
-echo "[[ ${KUBECONFIG} ]]"
-HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-while [ -z "${HEALTHY}" ]; do
-	echo "socket [ localhost:6443 ] api [ no response ]"
-	sleep 10
-	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
-done
-echo "socket [ localhost:6443 ] api [ healthy ]"
+## ── labops module resolver ───────────────────────────────────────────
+LABOPS_BASE="${LABOPS_BASE:-https://labops.sh}"
+command -v run >/dev/null 2>&1 || run() {
+	local module="$1"; shift
+	if [[ -n "${LABOPS_ROOT:-}" && -f "${LABOPS_ROOT}/${module}" ]]; then
+		bash "${LABOPS_ROOT}/${module}" "$@"
+	else
+		curl -fsSL "${LABOPS_BASE}/${module}" | bash -s -- "$@"
+	fi
+}
 
-## healthcheck
-METAL_CONTROLLER=$(curl -fsSL https://labops.sh/healthcheck/k8s-deployment-ready | RESOURCE="controller" NAMESPACE="metallb-system" bash -- 2>/dev/stderr)
+## wait for the API and the MetalLB controller
+run healthcheck/k8s-local
+run healthcheck/k8s-deployment-ready controller metallb-system
 
-## determine IPV4 ADDRESS of default route interface
-ETH=$(route | grep ^default | sed "s/.* //")
-IPADDRESS=$(ip addr show "${ETH}" | grep inet\ | awk '{print $2}' | cut -d/ -f1)
+## determine the IPv4 address of the default-route interface
+ETH=$(ip route show default | awk '/default/ {print $5; exit}')
+IPADDRESS=$(ip -4 addr show "${ETH}" | awk '/inet / {print $2; exit}' | cut -d/ -f1)
+if [[ -z "${IPADDRESS}" ]]; then
+	echo "[ METALLB/PREPARE ] ERROR: could not determine host IPv4 address" 1>&2
+	exit 1
+fi
+echo "[ METALLB/PREPARE ] host-pool address [ ${IPADDRESS}/32 ]"
 
-read -r -d '' METALPOOL <<EOF
+## apply the IPAddressPool + L2Advertisement (both required for L2 mode)
+read -r -d '' METALCONFIG <<EOF
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -26,9 +38,16 @@ metadata:
 spec:
   addresses:
   - ${IPADDRESS}/32
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: host-l2
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - host-pool
 EOF
 
-echo "${METALPOOL}"
-
-## apply IPAddressPool
-printf "${METALPOOL}" | kubectl apply -f -
+printf '%s\n' "${METALCONFIG}"
+printf '%s\n' "${METALCONFIG}" | kubectl apply -f -
