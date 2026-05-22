@@ -17,6 +17,9 @@
 - **Target host:** the Fedora 44 NUC this repo lives on (`/root/labops`). Tasks 1–12 only edit files; Tasks 13–15 modify the host.
 - **Verification model:** infrastructure shell scripts are verified by `shellcheck` + `bash -n` syntax check, plus behavioral tests where feasible (Tasks 1, 9) and a real install acceptance run (Tasks 13–15). This follows §9 of the spec.
 - **shellcheck gate:** every script must produce **no new error- or warning-level findings**. Pre-existing style/info findings on lines you did not change may be left as-is (noted per task where relevant).
+- **Indentation (critical):** every shell script in this repo uses **TAB** indentation — preserve it. Copy each task's code block **verbatim**; never let an editor or formatter convert tabs to spaces. The only space-indented lines permitted are the **YAML bodies inside `<<EOF` heredocs** (`metallb/prepare`, `storage/install`) — YAML forbids tabs. The `<<-'EOF'` heredocs in `healthcheck/k8s-deployment-ready` rely on tab stripping; space indentation there breaks the script. After writing each script, verify indentation:
+  - `metallb/prepare`, `storage/install`: `grep -nP '^ +\S' <file>` must show **only** YAML heredoc lines (e.g. `name:`, `addresses:`).
+  - every other script: `grep -nP '^ +\S' <file>` must return **nothing**.
 - **Commit footer:** every commit message ends with this footer line:
   `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
 - **Module header:** every new/edited script starts with the 4-line header shown in each task.
@@ -171,7 +174,7 @@ else
 fi
 ```
 
-Note: this version also resolves the previous `ARRSTATUS=($(...))` word-splitting (shellcheck SC2207) by reading the two values directly with `read`. The parsing behavior is unchanged.
+Note: this version also resolves the previous `ARRSTATUS=($(...))` word-splitting (shellcheck SC2207) by reading the two values directly with `read`. The parsing behavior is unchanged. **Tab indentation is mandatory here** — the `<<-'EOF'` heredocs strip leading tabs, so the `FILTER1`/`FILTER2` bodies and their `EOF` terminators must be tab-indented. Copy the block verbatim.
 
 - [ ] **Step 2: Lint**
 
