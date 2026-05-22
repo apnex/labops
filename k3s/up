@@ -1,0 +1,61 @@
+#!/bin/bash
+## module: k3s/up
+## purpose: orchestrate a full k3s host install (idempotent)
+## inputs:  K3S_STORAGE, K3S_METRICS (on/off), K3S_DRYRUN (non-empty = print plan and exit)
+## needs:   k3s/prepare, k3s/install, storage/install, metallb/install, metallb/prepare, k3s/verify
+set -euo pipefail
+
+## logging
+exec &> >(tee -a /root/k3s-install.log)
+echo "=== k3s/up — $(date -Is) ==="
+
+## resolve + export the repo root and the module resolver
+LABOPS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LABOPS_BASE="${LABOPS_BASE:-https://labops.sh}"
+export LABOPS_ROOT LABOPS_BASE
+run() {
+	local module="$1"; shift
+	if [[ -n "${LABOPS_ROOT:-}" && -f "${LABOPS_ROOT}/${module}" ]]; then
+		bash "${LABOPS_ROOT}/${module}" "$@"
+	else
+		curl -fsSL "${LABOPS_BASE}/${module}" | bash -s -- "$@"
+	fi
+}
+export -f run
+
+## cluster access + bounded waits for downstream modules
+export KUBECONFIG="/root/.kube/config"
+export WAIT_TIMEOUT="${WAIT_TIMEOUT:-300}"
+
+## ── component config (override via env) ──────────────────────────────
+: "${K3S_STORAGE:=on}"   # on -> k3s bundled local-path + 'standard' SC | off -> disabled
+: "${K3S_METRICS:=on}"   # on -> k3s bundled metrics-server             | off -> disabled
+
+## derive the k3s --disable list and the module sequence
+DISABLE="servicelb,traefik"
+MODULES=( k3s/prepare k3s/install )
+[[ "${K3S_STORAGE}" == "off" ]] && DISABLE+=",local-storage"
+[[ "${K3S_METRICS}" == "off" ]] && DISABLE+=",metrics-server"
+MODULES+=( metallb/install metallb/prepare )
+[[ "${K3S_STORAGE}" == "on" ]] && MODULES+=( storage/install )
+MODULES+=( k3s/verify )
+
+export K3S_DISABLE="${DISABLE}"
+export K3S_STORAGE K3S_METRICS
+
+echo "[ K3S/UP ] storage [ ${K3S_STORAGE} ]  metrics [ ${K3S_METRICS} ]  --disable [ ${DISABLE} ]"
+echo "[ K3S/UP ] modules [ ${MODULES[*]} ]"
+
+## dry-run: print the plan and stop before changing anything
+if [[ -n "${K3S_DRYRUN:-}" ]]; then
+	echo "[ K3S/UP ] dry-run — exiting before execution"
+	exit 0
+fi
+
+## run the stack
+for m in "${MODULES[@]}"; do
+	echo ">>> ${m}"
+	run "${m}"
+done
+
+echo "=== k3s/up — complete — $(date -Is) ==="
