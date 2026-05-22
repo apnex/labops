@@ -25,6 +25,8 @@ Example: `sudo K3S_STORAGE=off ./k3s/up`
 
 Use `K3S_DRYRUN=1 ./k3s/up` to print the resolved plan without changing anything.
 
+Pin MetalLB with `METALLB_VERSION` (default: latest release) — e.g. `METALLB_VERSION=v0.15.2 sudo ./k3s/up`.
+
 ## Teardown
 
 ```

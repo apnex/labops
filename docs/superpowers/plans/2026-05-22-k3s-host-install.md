@@ -695,7 +695,7 @@ git commit -m "k3s/verify: add toggle-aware cluster health assertions"
 ## module: k3s/up
 ## purpose: orchestrate a full k3s host install (idempotent)
 ## inputs:  K3S_STORAGE, K3S_METRICS (on/off), K3S_DRYRUN (non-empty = print plan and exit)
-## needs:   k3s/prepare, k3s/install, storage/install, metallb/install, metallb/prepare, k3s/verify
+## needs:   k3s/prepare, k3s/install, metallb/install, metallb/prepare, storage/install, k3s/verify
 set -euo pipefail
 
 ## logging
@@ -938,6 +938,8 @@ It is idempotent — safe to re-run. The detailed log is `/root/k3s-install.log`
 Example: `sudo K3S_STORAGE=off ./k3s/up`
 
 Use `K3S_DRYRUN=1 ./k3s/up` to print the resolved plan without changing anything.
+
+Pin MetalLB with `METALLB_VERSION` (default: latest release) — e.g. `METALLB_VERSION=v0.15.2 sudo ./k3s/up`.
 
 ## Teardown
 
