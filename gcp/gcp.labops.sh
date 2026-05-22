@@ -106,10 +106,3 @@ pathMatchers:
         hostRewrite: raw.githubusercontent.com
         pathPrefixRewrite: /apnex/labops/master/docker/
     service: https://www.googleapis.com/compute/v1/projects/labops/global/backendServices/svc-github-raw
-  - paths:
-    - /rke/*
-    routeAction:
-      urlRewrite:
-        hostRewrite: raw.githubusercontent.com
-        pathPrefixRewrite: /apnex/labops/master/rke/
-    service: https://www.googleapis.com/compute/v1/projects/labops/global/backendServices/svc-github-raw
