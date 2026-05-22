@@ -52,9 +52,13 @@ Each layer is a full **brainstorm → spec → plan → build** cycle (the caden
 k3s and registry work). Bottom-up; **Hermes last**. Each layer's spec lands in
 `docs/superpowers/specs/`.
 
-## 5. Layering — HYPOTHESIS (pending Phase A)
+## 5. Layering — HYPOTHESIS (⚠️ SUPERSEDED by Phase A)
 
-This ordering is a **pre-research hypothesis**. Phase A confirms or revises it — in
+> **⚠️ SUPERSEDED.** Phase A research found Hermes does **not** layer on kagent — they are
+> independent systems, not a stack. See §8 and §9. The forward plan is re-cut after the
+> scope decision.
+
+This ordering was a **pre-research hypothesis**. Phase A confirms or revises it — in
 particular whether kgateway *and* agentgateway are both required, or one is optional.
 
 - **L0** — Foundation: k3s + Argo CD + registry. ✅ Done.
@@ -87,3 +91,59 @@ particular whether kgateway *and* agentgateway are both required, or one is opti
 _Update this section as work proceeds across sessions._
 
 - **2026-05-22** — Roadmap created. Phase A not yet started. **Next action:** begin Phase A research.
+- **2026-05-22 (later)** — Phase A research complete (§9). **KEY FINDING:** Hermes is a
+  self-contained agent *application*, not a kagent agent — it cannot run "on top of"
+  kagent. kagent / kgateway / agentgateway are independent and optional; **none are
+  required for Hermes.** The §5 L0→L4 layering is therefore invalid. **Repo decision:**
+  new infra lives in its own dedicated repo, separate from `labops`. **Pending:** scope
+  decision — whether kagent stays in scope as a separate platform, or the effort is
+  scoped to Hermes alone. Forward plan (§3/§5/§6) to be re-cut once decided.
+- **2026-05-22 (later 2)** — Follow-up source-level research on Hermes↔kagent integration
+  (§9): verified there is **no real integration path** and no value in integrating for the
+  Hermes goal. Scope strongly points to **Hermes standalone**; kagent only if wanted as a
+  separate platform on its own merits.
+
+## 9. Phase A Findings (research, 2026-05-22)
+
+**Hermes** (`NousResearch/hermes-agent`, v2026.5.16) — self-contained Python agent
+*application*; image `nousresearch/hermes-agent`. Runs `hermes gateway run`;
+OpenAI-compatible API on `:8642`. Stateful — skills/sessions/memory under `/opt/data`
+(needs a PVC; `replicas: 1`). LLM endpoint set in `config.yaml` (`model.provider: custom`,
+`base_url`, `api_key`); env-var config removed, so `config.yaml` must be pre-seeded
+(ConfigMap + init container). **Not a kagent agent** (own runtime; no A2A protocol).
+Deploy as a plain Deployment + PVC + ConfigMap + Secret + Service. No external DB.
+
+**kagent** (`kagent-dev/kagent`, v0.9.4) — Kubernetes-native AI-agent framework; CRDs
+`kagent.dev/v1alpha2` (Agent, ModelConfig, …). Install: 4 OCI Helm charts under
+`oci://ghcr.io/kagent-dev/kagent/helm/` (`kagent-crds` first, then `kagent`). **Hard dep:
+PostgreSQL + pgvector** (bundled chart for dev). Does **not** require kgateway or
+agentgateway. ArgoCD: CRD chart needs `ServerSideApply=true` (oversized CRDs — same
+gotcha hit with Argo CD itself). Supports arbitrary OpenAI-compatible endpoints via the
+`ModelConfig` CR (`provider: OpenAI` + `openAI.baseUrl`).
+
+**kgateway** (`kgateway-dev/kgateway`, v2.3.1) — Envoy-based API gateway (K8s Gateway
+API). 2 OCI Helm charts (`cr.kgateway.dev/…`) + upstream Gateway API CRDs prerequisite
+(k3s ships none). Optional LLM-egress/guardrails layer — **not required**.
+
+**agentgateway** (`agentgateway.dev`, v1.2.1) — Rust agent-native proxy (MCP / A2A / LLM).
+2 OCI Helm charts (`cr.agentgateway.dev/charts`) + Gateway API CRDs. Has a documented
+ArgoCD install. Independent of kgateway since v1.0. Optional governance layer — **not
+required**.
+
+**LiteLLM router** (from `~/opencode.json`) — remote OpenAI-compatible endpoint (Google
+Cloud Run URL); API key present; exposes 3 models: `smart-fast` (Gemini 3 Flash),
+`smart-reasoning` (Gemini 3.1 Pro), `smart-coder` (Claude Opus 4.7). Hermes points its
+`config.yaml` `base_url` at it; the key goes into a k8s Secret.
+
+**Implication:** kagent / kgateway / agentgateway are not a foundation for Hermes — they
+are a separate, optional agentic-platform track. The Hermes goal is met by Hermes alone.
+
+**Hermes ↔ kagent integration — verified at source level (follow-up research).** kagent
+has **no shipped Hermes integration**: "Hermes" appears once in kagent's code as a
+`// Future backends (e.g. Hermes)` comment, and a Solo.io blog lists it only as an example
+of the agent-harness *category*. Hermes **cannot** be a kagent `AgentHarness` (backend
+hard-coded to `openclaw`/`nemoclaw`) nor a BYO `Agent` (BYO needs the A2A protocol; Hermes
+speaks ACP + MCP + an OpenAI-compatible API, not A2A). The only clean path is kagent
+*using* Hermes's `:8642` API as an LLM backend — which bypasses Hermes's own loop, memory,
+and skills. **Conclusion: integrating Hermes with kagent adds no value for the Hermes goal;
+kagent is a separate optional platform, not a Hermes substrate.**
