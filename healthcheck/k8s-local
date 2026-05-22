@@ -1,12 +1,22 @@
 #!/bin/bash
+## module: healthcheck/k8s-local
+## purpose: block until the kube-system API responds
+## inputs:  KUBECONFIG, WAIT_TIMEOUT (seconds; 0 = unbounded, default 0)
+## needs:   -
 
-## kubectl healthcheck
+WAIT_TIMEOUT="${WAIT_TIMEOUT:-0}"
+ELAPSED=0
+
 echo "[[ ${KUBECONFIG} ]]"
 HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
 while [[ -z ${HEALTHY} ]]; do
 	echo "socket [ localhost:6443 ] api [ no response ]"
 	sleep 10
+	ELAPSED=$((ELAPSED + 10))
+	if [[ ${WAIT_TIMEOUT} -gt 0 && ${ELAPSED} -ge ${WAIT_TIMEOUT} ]]; then
+		echo "[ K8S/LOCAL ] ERROR: api unreachable after ${WAIT_TIMEOUT}s" 1>&2
+		exit 1
+	fi
 	HEALTHY=$(kubectl -n kube-system get pods 2>/dev/null)
 done
 echo "socket [ localhost:6443 ] api [ healthy ]"
-
