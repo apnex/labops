@@ -142,39 +142,41 @@ Secret. The ConfigMap holds a **template**; the init container substitutes both 
 boot. Hermes then reads and *mutates* `/opt/data/config.yaml` at runtime, so the file
 lives on the PVC, not on a mounted ConfigMap.
 
-**ConfigMap `hermes-config`** — holds `config.yaml.tpl`:
+**ConfigMap `hermes-config`** — holds `config.yaml.tpl` matching Hermes's real
+`custom`-provider schema (verified against `/opt/hermes/cli-config.yaml.example` in the
+image at implementation):
 
 ```yaml
 model:
-  provider: custom
-  base_url: @LITELLM_BASE_URL@
-  default: @LITELLM_MODEL@
-  key_env: LITELLM_API_KEY      # Hermes reads the key from this env var at runtime
+  provider: "custom"
+  base_url: "@LITELLM_BASE_URL@"
+  default: "@LITELLM_MODEL@"
+  api_key: "@LITELLM_API_KEY@"
 ```
 
 **Init container** (busybox) — mounts the ConfigMap at `/seed` and the PVC at `/opt/data`;
-gets `LITELLM_BASE_URL` and `LITELLM_MODEL` from the Secret. On first boot (file absent)
-it substitutes the placeholders and writes the file; on later boots it leaves the file
-alone:
+gets all three values (`LITELLM_BASE_URL`, `LITELLM_MODEL`, `LITELLM_API_KEY`) from the
+Secret. It **always regenerates** `config.yaml` on every pod start — the Secret is the
+source of truth for this gateway-only deployment, and no runtime `hermes config set` flow
+is used:
 
 ```sh
-if [ ! -f /opt/data/config.yaml ]; then
-  sed -e "s|@LITELLM_BASE_URL@|${LITELLM_BASE_URL}|g" \
-      -e "s|@LITELLM_MODEL@|${LITELLM_MODEL}|g" \
+sed -e "s|@LITELLM_BASE_URL@|${LITELLM_BASE_URL}|g" \
+    -e "s|@LITELLM_MODEL@|${LITELLM_MODEL}|g" \
+    -e "s#@LITELLM_API_KEY@#${LITELLM_API_KEY}#g" \
     /seed/config.yaml.tpl > /opt/data/config.yaml
-fi
 ```
 
-First boot writes the rendered `config.yaml`; subsequent boots keep Hermes's
-runtime-evolved version. **Consequence:** changing the template (or the operator's
-`LITELLM_BASE_URL` / `LITELLM_MODEL`) after first deploy does not affect a running
-instance — update the live file (`hermes config set`) or recreate the PVC.
+(`#` is the sed delimiter for the API key — keys may contain `|` or `/`; `|` is safe for
+URL and model.) Because regeneration is unconditional, updating the operator's Secret
+values and bouncing the pod is the supported config-change flow. The literal API key
+value lands on the PVC inside `/opt/data/config.yaml`; **the key is never in the public
+git repo** — only the `@LITELLM_API_KEY@` placeholder is. The PVC's contents are local to
+the node.
 
-The router **API key is never written to a file** — it stays in the Secret, is injected
-into the main container as the `LITELLM_API_KEY` env var, and `config.yaml`'s
-`key_env: LITELLM_API_KEY` tells Hermes to read it from there. Exact `config.yaml` key
-syntax (`key_env` or equivalent) is confirmed against Hermes's docs at implementation;
-the principle is fixed: **URL, model, and key never in the public repo.**
+*Earlier draft used `key_env: LITELLM_API_KEY` and a seed-if-absent guard — Phase A
+research mis-stated Hermes's schema; corrected during HE-14 acceptance against the actual
+`cli-config.yaml.example` in the image.*
 
 ### 5.2 Secret — `hermes-secrets`
 

@@ -114,6 +114,22 @@ _Update this section as work proceeds across sessions._
   `LITELLM_MODEL` moved to the Secret, repo ships portable `ClusterIP` with a `vip-hermes`
   MetalLB overlay in `labops/hermes-vip/`). **Implementation plan written:**
   `docs/superpowers/plans/2026-05-22-hermes-deployment.md`. Next: execution.
+- **2026-05-23 (later 6)** — **IMPLEMENTATION COMPLETE.** All 14 HE-tasks done via
+  subagent-driven development (Opus subagents throughout). Hermes is live on the NUC,
+  end-to-end verified: `POST :8642/v1/chat/completions` with bearer token returns a real
+  `smart-coder` response (Claude Opus 4.7 via the LiteLLM router); dashboard responds on
+  `:9119`. **Three runtime fixes surfaced during acceptance, committed in `apnex/hermes`:**
+  (1) `1f9b3ed` — main container changed from `command: ["hermes","gateway","run"]` to
+  `args: ["gateway","run"]` so the image's ENTRYPOINT script (which activates the venv
+  where `hermes` lives) actually runs;
+  (2) `0b277cc` — short-lived `.env`-injection attempt (later reverted) — turned out the
+  `key_env: LITELLM_API_KEY` mechanism the original spec assumed does **not** exist in
+  Hermes's real config schema;
+  (3) `a9920bd` — correct fix: the `config.yaml` template uses `api_key:
+  "@LITELLM_API_KEY@"` directly (Hermes's actual schema for `custom` provider), and the
+  init container now **always** regenerates `config.yaml` from the Secret (no
+  seed-if-absent — the Secret is the source of truth; this deployment doesn't use
+  runtime `hermes config set`). Spec §5.1 corrected accordingly.
 
 ## 9. Phase A Findings (research, 2026-05-22)
 
