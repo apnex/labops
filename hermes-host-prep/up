@@ -1,0 +1,32 @@
+#!/bin/bash
+## module: hermes-host-prep/up
+## purpose: prepare the NUC host for the Hermes pod's expectations
+##          (currently: ensure /run/user/<uid> exists at boot so the
+##          pulse-socket hostPath mount succeeds on headless reboots)
+## inputs:  HERMES_AUDIO_USER (default: apnex)
+## needs:   -
+set -euo pipefail
+
+: "${HERMES_AUDIO_USER:=apnex}"
+
+if ! id "${HERMES_AUDIO_USER}" >/dev/null 2>&1; then
+	echo "[ HERMES-HOST-PREP ] WARNING: user [ ${HERMES_AUDIO_USER} ] not found — skipping linger" 1>&2
+	exit 0
+fi
+
+UID_NUM="$(id -u "${HERMES_AUDIO_USER}")"
+CURRENT="$(loginctl show-user "${HERMES_AUDIO_USER}" 2>/dev/null | awk -F= '/^Linger=/{print $2}')"
+
+if [[ "${CURRENT}" == "yes" ]]; then
+	echo "[ HERMES-HOST-PREP ] linger already enabled for [ ${HERMES_AUDIO_USER} ] (uid ${UID_NUM})"
+else
+	loginctl enable-linger "${HERMES_AUDIO_USER}"
+	echo "[ HERMES-HOST-PREP ] linger enabled for [ ${HERMES_AUDIO_USER} ] — /run/user/${UID_NUM} will exist from boot"
+fi
+
+## verification — fail loudly if the runtime dir is not present after enable
+if [[ ! -d "/run/user/${UID_NUM}" ]]; then
+	echo "[ HERMES-HOST-PREP ] WARNING: /run/user/${UID_NUM} not present yet — systemd may need a moment" 1>&2
+else
+	echo "[ HERMES-HOST-PREP ] runtime dir [ /run/user/${UID_NUM} ] present"
+fi
