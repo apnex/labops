@@ -11,3 +11,17 @@
   gitPath: kustomize
   revision: master
   namespace: podinfo
+
+- name: hermes
+  type: git
+  repoURL: https://github.com/apnex/hermes
+  gitPath: manifests
+  revision: main
+  namespace: hermes
+
+- name: hermes-vip
+  type: git
+  repoURL: https://github.com/apnex/labops
+  gitPath: hermes-vip
+  revision: master
+  namespace: hermes
