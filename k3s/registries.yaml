@@ -1,0 +1,22 @@
+## k3s containerd registry config.
+##
+## Tells containerd to trust the in-cluster registry on the shared MetalLB VIP
+## at 192.168.1.250:5000 as plaintext HTTP. Without this, kubelet refuses to
+## pull from the registry (rejecting plaintext HTTP by default).
+##
+## Apply on the host (one-time, then on registry IP/port changes):
+##   sudo cp /root/labops/k3s/registries.yaml /etc/rancher/k3s/registries.yaml
+##   sudo systemctl restart k3s
+##
+## Verify:
+##   kubectl run probe --image=192.168.1.250:5000/library/hello-world --restart=Never
+##   kubectl logs probe
+mirrors:
+  "192.168.1.250:5000":
+    endpoint:
+      - "http://192.168.1.250:5000"
+
+configs:
+  "192.168.1.250:5000":
+    tls:
+      insecure_skip_verify: true
