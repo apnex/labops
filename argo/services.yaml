@@ -5,13 +5,6 @@
 # Required (all):  name, type (git|helm), repoURL, revision, namespace
 # Required (git):  gitPath     Required (helm): chart        Optional (helm): values
 
-- name: podinfo
-  type: git
-  repoURL: https://github.com/stefanprodan/podinfo
-  gitPath: kustomize
-  revision: master
-  namespace: podinfo
-
 - name: hermes
   type: git
   repoURL: https://github.com/apnex/hermes
