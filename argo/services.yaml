@@ -18,3 +18,10 @@
   gitPath: hermes-vip
   revision: master
   namespace: hermes
+
+- name: honcho
+  type: git
+  repoURL: https://github.com/apnex/honcho
+  gitPath: manifests
+  revision: main
+  namespace: honcho
