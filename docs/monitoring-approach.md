@@ -307,6 +307,46 @@ extra debugging.
   the deriver so the redis-exporter `LLEN` query targets it
   correctly.
 
+## Unrelated infra fix surfaced during this design pass
+
+**Hermes pod SSH key mount mode regression** (tracked here so it
+doesn't get lost; belongs in `apnex/hermes` not labops monitoring,
+but logged here until addressed).
+
+The `host-ssh-key` Secret volume in `apps/Deployment/hermes` already
+sets `defaultMode: 256` (= 0400), but the effective mode on the
+mounted file is `0440`. OpenSSH refuses the key with "Permissions
+0440 are too open" and falls back to password auth, which loops.
+
+Root cause: the pod's `securityContext` sets `fsGroup: 10000`,
+which causes the kubelet to recursively add group-rw to all volume
+files for that fsGroup. This overrides per-file `defaultMode` for
+the group bits. Effective mode becomes `0440` instead of the
+requested `0400`.
+
+**Permanent fix:** switch the volume from a plain Secret to a
+`projected` volume with an explicit per-source `mode`, which
+*does* survive the fsGroup recursion:
+
+```yaml
+volumes:
+  - name: host-ssh-key
+    projected:
+      defaultMode: 0400
+      sources:
+        - secret:
+            name: hermes-host-ssh-key
+            optional: true
+            items:
+              - key: id_ed25519
+                path: id_ed25519
+                mode: 0400          # survives fsGroup
+```
+
+Current workaround in the `host-access` skill (copy key to
+`/tmp/host_key && chmod 0400`) keeps working until this is
+applied. Once applied, drop the workaround note from the skill.
+
 ## Non-goals (v1)
 
 - **No Alertmanager routing.** Dashboards first, alerts second.
