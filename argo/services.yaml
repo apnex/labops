@@ -12,10 +12,10 @@
   revision: main
   namespace: hermes
 
-- name: hermes-vip
+- name: vip-hermes
   type: git
   repoURL: https://github.com/apnex/labops
-  gitPath: hermes-vip
+  gitPath: vip-hermes
   revision: master
   namespace: hermes
 
