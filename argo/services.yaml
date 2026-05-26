@@ -25,10 +25,3 @@
   gitPath: manifests
   revision: main
   namespace: honcho
-
-- name: registry
-  type: git
-  repoURL: https://github.com/apnex/labops
-  gitPath: registry
-  revision: master
-  namespace: registry
