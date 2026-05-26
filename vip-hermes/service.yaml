@@ -4,7 +4,7 @@ metadata:
   name: vip-hermes
   namespace: hermes
   annotations:
-    metallb.universe.tf/allow-shared-ip: host
+    metallb.io/allow-shared-ip: host
 spec:
   type: LoadBalancer
   selector:

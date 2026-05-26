@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: argocd-server
     app.kubernetes.io/part-of: argocd
   annotations:
-    metallb.universe.tf/allow-shared-ip: host
+    metallb.io/allow-shared-ip: host
 spec:
   selector:
     app.kubernetes.io/name: argocd-server
