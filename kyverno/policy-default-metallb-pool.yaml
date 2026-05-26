@@ -1,0 +1,72 @@
+# Kyverno ClusterPolicy: inject the default MetalLB IP-pool annotation
+# onto any LoadBalancer Service that does not already specify one.
+#
+# Purpose: lets component repos (apnex/hermes, apnex/honcho, ...) ship
+# substrate-agnostic Service manifests. The substrate (this policy)
+# decorates them at admission time with the MetalLB pool annotation,
+# selecting the host-pool defined by labops/metallb/prepare.
+#
+# Services that already carry an explicit pool annotation (e.g.
+# vip-vllm with vllm-pool, or any future-substrate variant) are NOT
+# overwritten — the precondition skips them.
+#
+# Safety properties:
+#   - failurePolicy: Ignore           → Kyverno failure never blocks
+#                                       Service admission cluster-wide
+#   - background: false               → does not retroactively churn
+#                                       existing Services on install
+#   - namespaceSelector NotIn         → excludes substrate / control-plane
+#                                       namespaces (kube-system, kyverno,
+#                                       argocd, metallb-system)
+#   - precondition annotation-empty   → preserves explicit overrides
+#   - operations: [CREATE, UPDATE]    → re-mutates on every ArgoCD sync
+#                                       so the annotation never drifts
+#
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: default-metallb-pool
+  annotations:
+    policies.kyverno.io/title: "Default MetalLB pool"
+    policies.kyverno.io/category: "labops/substrate"
+    policies.kyverno.io/severity: "low"
+    policies.kyverno.io/subject: "Service"
+    policies.kyverno.io/description: >-
+      Injects metallb.io/ip-allocated-from-pool=host-pool onto
+      LoadBalancer Services that do not already carry an explicit
+      pool annotation. See labops/kyverno/policy-default-metallb-pool.yaml.
+spec:
+  background: false
+  failurePolicy: Ignore
+  rules:
+  - name: add-host-pool-annotation
+    match:
+      any:
+      - resources:
+          kinds:
+          - Service
+          operations:
+          - CREATE
+          - UPDATE
+          namespaceSelector:
+            matchExpressions:
+            - key: kubernetes.io/metadata.name
+              operator: NotIn
+              values:
+              - kube-system
+              - kyverno
+              - argocd
+              - metallb-system
+    preconditions:
+      all:
+      - key: "{{ request.object.spec.type || '' }}"
+        operator: Equals
+        value: LoadBalancer
+      - key: "{{ request.object.metadata.annotations.\"metallb.io/ip-allocated-from-pool\" || '' }}"
+        operator: Equals
+        value: ""
+    mutate:
+      patchStrategicMerge:
+        metadata:
+          annotations:
+            metallb.io/ip-allocated-from-pool: host-pool

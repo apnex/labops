@@ -1,0 +1,15 @@
+#!/bin/bash
+## module: kyverno/remove
+## purpose: uninstall Kyverno + its policies (idempotent)
+## inputs:  KUBECONFIG, KYVERNO_VERSION (must match install version)
+
+KYVERNO_VERSION="${KYVERNO_VERSION:-$(curl -fsSL https://api.github.com/repos/kyverno/kyverno/releases/latest \
+	| sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -1)}"
+echo "[ KYVERNO/REMOVE ] version [ ${KYVERNO_VERSION} ]"
+
+## remove ClusterPolicies first (controller still running, so they can be deleted cleanly)
+kubectl delete clusterpolicy --all --ignore-not-found
+
+## remove Kyverno itself
+kubectl delete --ignore-not-found \
+	-f "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/install.yaml"

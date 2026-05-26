@@ -1,0 +1,34 @@
+#!/bin/bash
+## module: kyverno/prepare
+## purpose: install ClusterPolicies that decorate substrate-agnostic
+##          manifests at admission time (default MetalLB pool, etc.)
+## inputs:  KUBECONFIG, LABOPS_ROOT
+## needs:   healthcheck/k8s-local, healthcheck/k8s-deployment-ready
+
+## ── labops module resolver ───────────────────────────────────────────
+LABOPS_BASE="${LABOPS_BASE:-https://labops.sh}"
+command -v run >/dev/null 2>&1 || run() {
+	local module="$1"; shift
+	if [[ -n "${LABOPS_ROOT:-}" && -f "${LABOPS_ROOT}/${module}" ]]; then
+		bash "${LABOPS_ROOT}/${module}" "$@"
+	else
+		curl -fsSL "${LABOPS_BASE}/${module}" | bash -s -- "$@"
+	fi
+}
+
+## wait for the API and the Kyverno admission controller
+run healthcheck/k8s-local
+run healthcheck/k8s-deployment-ready kyverno-admission-controller kyverno
+
+## wait for the ClusterPolicy CRD to register before applying our policies
+kubectl wait --for=condition=established --timeout=60s crd/clusterpolicies.kyverno.io
+
+## resolve the policy directory (local LABOPS_ROOT preferred; fallback to httpfs)
+if [[ -n "${LABOPS_ROOT:-}" && -d "${LABOPS_ROOT}/kyverno" ]]; then
+	POLICY_DIR="${LABOPS_ROOT}/kyverno"
+	echo "[ KYVERNO/PREPARE ] applying policies from local [ ${POLICY_DIR} ]"
+	kubectl apply -f "${POLICY_DIR}/policy-default-metallb-pool.yaml"
+else
+	echo "[ KYVERNO/PREPARE ] applying policies from remote [ ${LABOPS_BASE}/kyverno/ ]"
+	kubectl apply -f "${LABOPS_BASE}/kyverno/policy-default-metallb-pool.yaml"
+fi
