@@ -64,3 +64,13 @@ case "${INIT}" in
 		echo "[ K3S/PREPARE ] WARNING: unknown init system — no host prep applied" 1>&2
 		;;
 esac
+
+## persistent PATH fix for interactive shells — Rocky/RHEL root logins omit
+## /usr/local/bin even though kubectl/argocd land there. /etc/profile.d/*.sh
+## is sourced by every login shell; single-quoted heredoc preserves $PATH for
+## login-time expansion. Strictly additive — no-op on Debian/Ubuntu.
+cat > /etc/profile.d/local-path.sh <<'EOF'
+export PATH="/usr/local/sbin:/usr/local/bin:$PATH"
+EOF
+chmod 644 /etc/profile.d/local-path.sh
+echo "[ K3S/PREPARE ] /etc/profile.d/local-path.sh [ written ]"
