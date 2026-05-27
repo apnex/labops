@@ -1,6 +1,6 @@
 #!/bin/bash
 ## module: argo/install
-## purpose: install Argo CD and the labops service-registry ApplicationSet
+## purpose: install Argo CD (platform only — no service catalogue)
 ## inputs:  KUBECONFIG
 ## needs:   -
 # https://argo-cd.readthedocs.io/en/stable/getting_started/
@@ -15,9 +15,3 @@ kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 ## install Argo CD (stable channel) — server-side apply: the ApplicationSet CRD
 ## exceeds client-side apply's 262144-byte last-applied-configuration annotation limit
 kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-## wait for the ApplicationSet CRD to register before applying our ApplicationSet
-kubectl wait --for=condition=established --timeout=60s crd/applicationsets.argoproj.io
-
-## apply the labops service-registry ApplicationSet
-kubectl apply -n argocd -f https://labops.sh/argo/services.appset.yaml
