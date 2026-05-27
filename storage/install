@@ -39,7 +39,7 @@ kind: StorageClass
 metadata:
   name: standard
 provisioner: rancher.io/local-path
-reclaimPolicy: Delete
+reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
 EOF
 
