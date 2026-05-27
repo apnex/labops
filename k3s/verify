@@ -53,7 +53,9 @@ check "metallb IPAddressPool"    retry 6  5 kubectl -n metallb-system get ipaddr
 check "metallb L2Advertisement"  retry 6  5 kubectl -n metallb-system get l2advertisement host-l2
 
 if [[ "${K3S_STORAGE}" == "on" ]]; then
-	check "StorageClass standard" retry 6 5 kubectl get storageclass standard
+	check "StorageClass standard"          retry 6 5 kubectl get storageclass standard
+	check "StorageClass ephemeral"         retry 6 5 kubectl get storageclass ephemeral
+	check "StorageClass local-path-static" retry 6 5 kubectl get storageclass local-path-static
 fi
 if [[ "${K3S_METRICS}" == "on" ]]; then
 	check "metrics-server top node" retry 24 5 kubectl top node

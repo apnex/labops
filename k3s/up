@@ -33,13 +33,14 @@ export KUBECONFIG="/root/.kube/config"
 export WAIT_TIMEOUT="${WAIT_TIMEOUT:-300}"
 
 ## ── component config (override via env) ──────────────────────────────
-: "${K3S_STORAGE:=on}"   # on -> k3s bundled local-path + 'standard' SC | off -> disabled
-: "${K3S_METRICS:=on}"   # on -> k3s bundled metrics-server             | off -> disabled
+: "${K3S_STORAGE:=on}"   # on -> labops deploys rancher provisioner + standard/ephemeral SCs | off -> no SCs (BYO Longhorn etc.)
+: "${K3S_METRICS:=on}"   # on -> k3s bundled metrics-server | off -> disabled
 
-## derive the k3s --disable list and the module sequence
-DISABLE="servicelb,traefik"
+## derive the k3s --disable list and the module sequence.
+## local-storage is ALWAYS disabled: labops owns the provisioner end-to-end
+## via storage/install, so k3s's bundled local-path would just duplicate it.
+DISABLE="servicelb,traefik,local-storage"
 MODULES=( k3s/prepare k3s/install )
-[[ "${K3S_STORAGE}" == "off" ]] && DISABLE+=",local-storage"
 [[ "${K3S_METRICS}" == "off" ]] && DISABLE+=",metrics-server"
 MODULES+=( metallb/install metallb/prepare )
 [[ "${K3S_STORAGE}" == "on" ]] && MODULES+=( storage/install )

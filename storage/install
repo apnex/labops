@@ -1,6 +1,8 @@
 #!/bin/bash
 ## module: storage/install
-## purpose: ensure a local-path provisioner and a 'standard' StorageClass exist
+## purpose: deploy rancher local-path provisioner + three StorageClasses:
+##          standard (Retain, default) + ephemeral (Delete) for dynamic provisioning,
+##          local-path-static (no-provisioner, Retain) for operator-authored PVs
 ## inputs:  KUBECONFIG, LABOPS_ROOT
 ## needs:   healthcheck/k8s-local
 
@@ -22,32 +24,50 @@ command -v run >/dev/null 2>&1 || run() {
 ## wait for the API
 run healthcheck/k8s-local
 
-## detect an existing rancher.io/local-path provisioner (k3s bundles one)
-if kubectl get storageclass -o jsonpath='{.items[*].provisioner}' 2>/dev/null \
-	| tr ' ' '\n' | grep -qx 'rancher.io/local-path'; then
-	echo "[ STORAGE/INSTALL ] local-path provisioner already present — skipping deploy"
-else
-	echo "[ STORAGE/INSTALL ] deploying rancher local-path-provisioner"
-	mkdir -p /opt/local-path-provisioner
-	kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-fi
+## Deploy the upstream rancher local-path-provisioner. k3s's bundled
+## local-path is disabled (see k3s/up DISABLE list); labops owns the
+## provisioner end-to-end. Idempotent via kubectl apply — repeat runs
+## are no-ops.
+echo "[ STORAGE/INSTALL ] deploying rancher local-path-provisioner"
+mkdir -p /opt/local-path-provisioner
+kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
 
-## always ensure the 'standard' StorageClass (labops apps reference it by name)
-read -r -d '' LOCALSTORAGE <<EOF
+## Two StorageClasses, reclaim by intent. Both backed by the same
+## rancher.io/local-path provisioner — same disk, same shape — but
+## different lifecycle contracts:
+##   standard   Retain — stateful workloads (postgres, app data,
+##                       anything where accidental loss hurts);
+##                       MARKED CLUSTER DEFAULT for safe defaulting
+##   ephemeral  Delete — caches, scratch, reproducible state;
+##                       opt-in via storageClassName: ephemeral
+## Note: reclaimPolicy is immutable on existing SCs (kubectl apply
+## refuses with "Forbidden"). If a prior-shape SC exists, delete it
+## first or accept the apply will no-op on the policy field.
+read -r -d '' STORAGECLASSES <<EOF
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
 provisioner: rancher.io/local-path
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ephemeral
+provisioner: rancher.io/local-path
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
 EOF
 
-printf '%s\n' "${LOCALSTORAGE}"
-printf '%s\n' "${LOCALSTORAGE}" | kubectl apply -f -
+printf '%s\n' "${STORAGECLASSES}"
+printf '%s\n' "${STORAGECLASSES}" | kubectl apply -f -
 
 ## ensure the 'local-path-static' StorageClass for operator-authored PVs.
-## Used by apps that pre-create PVs at stable on-disk paths (e.g. hermes,
+## Used by apps that pre-create PVs at stable on-disk paths (e.g.
 ## honcho/postgres) so destroy/rebuild cycles re-bind to the same volume
 ## without manual UID patching. No provisioner — PVs are authored, not
 ## generated. WaitForFirstConsumer preserves node affinity on local: paths.
