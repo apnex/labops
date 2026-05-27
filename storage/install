@@ -45,3 +45,21 @@ EOF
 
 printf '%s\n' "${LOCALSTORAGE}"
 printf '%s\n' "${LOCALSTORAGE}" | kubectl apply -f -
+
+## ensure the 'local-path-static' StorageClass for operator-authored PVs.
+## Used by apps that pre-create PVs at stable on-disk paths (e.g. hermes,
+## honcho/postgres) so destroy/rebuild cycles re-bind to the same volume
+## without manual UID patching. No provisioner — PVs are authored, not
+## generated. WaitForFirstConsumer preserves node affinity on local: paths.
+read -r -d '' LOCALSTATIC <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path-static
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+EOF
+
+printf '%s\n' "${LOCALSTATIC}"
+printf '%s\n' "${LOCALSTATIC}" | kubectl apply -f -
