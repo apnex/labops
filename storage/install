@@ -32,6 +32,13 @@ echo "[ STORAGE/INSTALL ] deploying rancher local-path-provisioner"
 mkdir -p /opt/local-path-provisioner
 kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
 
+## the rancher manifest ships its own 'local-path' SC (Delete reclaim)
+## that duplicates our 'ephemeral' by intent. Drop it so operators
+## interact with the intent-named SCs (standard / ephemeral /
+## local-path-static) only — and so a stray 'storageClassName: local-path'
+## doesn't silently land in a Delete bucket instead of the intended Retain.
+kubectl delete storageclass local-path --ignore-not-found
+
 ## Two StorageClasses, reclaim by intent. Both backed by the same
 ## rancher.io/local-path provisioner — same disk, same shape — but
 ## different lifecycle contracts:
