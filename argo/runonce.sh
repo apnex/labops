@@ -4,6 +4,10 @@
 ## inputs:  -
 ## needs:   k3s/up, argo/install, argo/set-service, argo/cli-install, argo/set-password
 
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
 if [[ -e /tmp/runonce ]]; then
 	rm /tmp/runonce
 	exec &> >(tee -a /root/startup.log)

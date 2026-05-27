@@ -4,6 +4,10 @@
 ## inputs:  K3S_DISABLE (comma list of bundled components to disable; default servicelb,traefik)
 ## needs:   -
 
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
 ## install k3s
 K3S_DISABLE="${K3S_DISABLE:-servicelb,traefik}"
 export INSTALL_K3S_CHANNEL_URL="https://update.k3s.io/v1-release/channels"

@@ -121,5 +121,21 @@ cd labops.sh
 
 ---
 ## Application Catalogue
-Now that you have provisioned a `labops.sh` node, you can begin to deploy apps to it.  
+Now that you have provisioned a `labops.sh` node, you can begin to deploy apps to it.
+
+---
+## Script preamble
+
+Operator entrypoint scripts (anything an operator is expected to invoke directly via `sudo`) start with a two-line preamble, placed directly after the `## needs:` header line and before any other code:
+
+```bash
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+```
+
+**Why each line:**
+- **Root assertion** — these scripts manage system state (k3s install, sudoers, the root kubeconfig at `/root/.kube/config`, etc.); requiring real root makes the contract explicit and the failure mode clean.
+- **PATH export** — on RHEL / Rocky / CentOS, the default `sudo` `secure_path` excludes `/usr/local/sbin:/usr/local/bin`, where the k3s installer drops `kubectl` and `argo/cli-install` drops the `argocd` CLI. Prepending those paths is a no-op on Debian / Ubuntu (already present) and the fix on RHEL — same line, every distro.
+
+Any new entrypoint script in this repo (e.g. under `k3s/`, `argo/`, `metallb/`, `storage/`, etc.) must include both lines. Sub-modules called via the `run()` resolver (e.g. anything under `healthcheck/`) inherit the parent's env and don't need the preamble.  
 

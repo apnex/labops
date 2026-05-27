@@ -21,7 +21,7 @@
 - Shell scripts use **TAB** indentation (consistent with labops) and must be `shellcheck`-clean.
 - YAML files use **space** indentation (2 spaces).
 - Commits go directly to the default branch (no PRs).
-- **No `Co-Authored-By` trailer** — `labops/CLAUDE.md` enforces this; the rule applies in the new `apnex/hermes` repo too.
+- **No AI attribution** in commit messages — no `Co-Authored-By` trailer, no "Generated with…" footers, no model name references; the rule applies in the new `apnex/hermes` repo too.
 - Tasks **12–14 are host-modifying** — they apply Secrets and verify the live cluster.
 
 ---

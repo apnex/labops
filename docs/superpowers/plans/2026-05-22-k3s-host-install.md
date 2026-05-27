@@ -20,8 +20,6 @@
 - **Indentation (critical):** every shell script in this repo uses **TAB** indentation — preserve it. Copy each task's code block **verbatim**; never let an editor or formatter convert tabs to spaces. The only space-indented lines permitted are the **YAML bodies inside `<<EOF` heredocs** (`metallb/prepare`, `storage/install`) — YAML forbids tabs. The `<<-'EOF'` heredocs in `healthcheck/k8s-deployment-ready` rely on tab stripping; space indentation there breaks the script. After writing each script, verify indentation:
   - `metallb/prepare`, `storage/install`: `grep -nP '^ +\S' <file>` must show **only** YAML heredoc lines (e.g. `name:`, `addresses:`).
   - every other script: `grep -nP '^ +\S' <file>` must return **nothing**.
-- **Commit footer:** every commit message ends with this footer line:
-  `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
 - **Module header:** every new/edited script starts with the 4-line header shown in each task.
 - All scripts keep `#!/bin/bash` and remain executable (`chmod +x` for new files).
 

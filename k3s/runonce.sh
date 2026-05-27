@@ -4,6 +4,11 @@
 ##          then signal completion
 ## inputs:  -
 ## needs:   k3s/up, hermes-host-prep/up
+
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
 set -euo pipefail
 
 LABOPS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"

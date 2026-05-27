@@ -57,7 +57,7 @@ Hermes deployment only. It is a single, cohesive capability — one spec, one pl
 | 6 | Image | Pinned — `nousresearch/hermes-agent:v2026.5.16` |
 | 7 | Interfaces | API `:8642` + dashboard `:9119`; no messaging gateways |
 | 8 | `config.yaml` | Seeded via ConfigMap + init container (seed-if-absent); Hermes owns it after first boot |
-| 9 | Model | Operator-supplied via `LITELLM_MODEL` in the Secret (per their router's naming); this deployment uses `smart-coder` (Claude Opus 4.7) |
+| 9 | Model | Operator-supplied via `LITELLM_MODEL` in the Secret (per their router's naming); this deployment uses `smart-coder` |
 | 10 | Secrets | Manually-applied `hermes-secrets` Secret with **four** values — `LITELLM_BASE_URL`, `LITELLM_MODEL`, `LITELLM_API_KEY`, `API_SERVER_KEY` — created out-of-band by the `set-secret` script from env vars; not in git, not Argo-managed |
 | 11 | Exposure | Hermes repo ships a portable `ClusterIP` Service; a separate `vip-hermes` MetalLB LoadBalancer overlay (`allow-shared-ip: host`, NUC IP `192.168.1.250`) lives in `labops/hermes-vip/` and is registered as a second entry in `services.yaml` |
 | 12 | TLS | Plain HTTP (LAN); the API is guarded by the `API_SERVER_KEY` bearer token |
@@ -93,8 +93,7 @@ apnex/hermes/
     service.yaml
 ```
 
-No `Namespace` manifest — Argo CD's `CreateNamespace=true` handles it. No `CLAUDE.md` —
-this is a deployment-artifact repo, not an agent-development repo.
+No `Namespace` manifest — Argo CD's `CreateNamespace=true` handles it.
 
 ### 4.2 Registry entries (added to `labops/argo/services.yaml`)
 

@@ -4,5 +4,9 @@
 ## inputs:  KUBECONFIG
 ## needs:   -
 
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
 ## expose the Argo CD UI as a LoadBalancer (vip-argocd-server), alongside argocd-server
 kubectl -n argocd apply -f https://labops.sh/argo/argo.vip.yaml

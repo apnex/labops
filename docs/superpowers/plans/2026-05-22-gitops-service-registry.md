@@ -17,8 +17,6 @@
 - **Target:** the `labops` repo at `/root/labops`; the live k3s cluster on this NUC (from the earlier k3s work). Tasks 1–8 edit/commit repo files; Tasks 9–10 modify the cluster.
 - **Indentation:** shell scripts use **TAB** indentation; YAML files use **space** indentation.
 - **shellcheck gate:** every edited shell script must be `shellcheck`-clean (no output).
-- **Commit footer:** every commit message ends with:
-  `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
 - Commits go directly to `master` (consistent with this repo and the earlier work).
 - **Host-modifying:** Tasks 9–10 install Argo CD on the NUC and deploy workloads — pause for a checkpoint before them.
 

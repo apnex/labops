@@ -4,6 +4,10 @@
 ## inputs:  KUBECONFIG
 ## needs:   -
 
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
 ## delete the service-registry ApplicationSet (cascades to its generated Applications)
 kubectl -n argocd delete applicationset services --ignore-not-found
 

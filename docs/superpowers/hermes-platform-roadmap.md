@@ -117,7 +117,7 @@ _Update this section as work proceeds across sessions._
 - **2026-05-23 (later 6)** — **IMPLEMENTATION COMPLETE.** All 14 HE-tasks done via
   subagent-driven development (Opus subagents throughout). Hermes is live on the NUC,
   end-to-end verified: `POST :8642/v1/chat/completions` with bearer token returns a real
-  `smart-coder` response (Claude Opus 4.7 via the LiteLLM router); dashboard responds on
+  `smart-coder` response (via the LiteLLM router); dashboard responds on
   `:9119`. **Three runtime fixes surfaced during acceptance, committed in `apnex/hermes`:**
   (1) `1f9b3ed` — main container changed from `command: ["hermes","gateway","run"]` to
   `args: ["gateway","run"]` so the image's ENTRYPOINT script (which activates the venv
@@ -160,7 +160,7 @@ required**.
 
 **LiteLLM router** (from `~/opencode.json`) — remote OpenAI-compatible endpoint (Google
 Cloud Run URL); API key present; exposes 3 models: `smart-fast` (Gemini 3 Flash),
-`smart-reasoning` (Gemini 3.1 Pro), `smart-coder` (Claude Opus 4.7). Hermes points its
+`smart-reasoning` (Gemini 3.1 Pro), `smart-coder`. Hermes points its
 `config.yaml` `base_url` at it; the key goes into a k8s Secret.
 
 **Implication:** kagent / kgateway / agentgateway are not a foundation for Hermes — they

@@ -3,6 +3,11 @@
 ## purpose: orchestrate a full k3s host install (idempotent)
 ## inputs:  K3S_STORAGE, K3S_METRICS (on/off), K3S_DRYRUN (non-empty = print plan and exit)
 ## needs:   k3s/prepare, k3s/install, metallb/install, metallb/prepare, storage/install, k3s/verify
+
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
 set -euo pipefail
 
 ## logging

@@ -5,6 +5,10 @@
 ## needs:   -
 # https://argo-cd.readthedocs.io/en/stable/getting_started/
 
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
 ## namespace (idempotent)
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 

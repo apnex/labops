@@ -1,2 +1,11 @@
 #!/bin/bash
+## module: metallb/remove
+## purpose: delete the metallb-system namespace (cascades to all MetalLB resources)
+## inputs:  KUBECONFIG
+## needs:   -
+
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
 kubectl delete ns metallb-system
