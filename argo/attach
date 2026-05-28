@@ -1,0 +1,101 @@
+#!/bin/bash
+## module: argo/attach
+## purpose: re-enable Argo CD sync for ApplicationSets, optionally
+##          redirecting the catalogue source to a different repo/revision
+## inputs:  KUBECONFIG
+## needs:   -
+
+## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
+export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
+
+## Usage:
+##   attach                                 # attach every AS in argocd ns
+##   attach <name>                          # attach the named AS only
+##   attach <name> <repoURL>                # attach + redirect catalogue source
+##   attach <name> <repoURL> <revision>     # attach + redirect source + revision
+##
+## Examples:
+##   attach
+##   attach kate-minimal
+##   attach kate-minimal https://github.com/me/kate
+##   attach kate-minimal https://github.com/me/kate dev
+##
+## Effect:
+##   1. (Optional) Patch ApplicationSet spec.generators[0].git.repoURL
+##      and/or .revision via JSON patch — redirects the CATALOGUE source.
+##   2. Remove argocd.argoproj.io/skip-reconcile annotation if present.
+##   3. Trigger an immediate hard refresh → AS reconciles within seconds,
+##      re-reads its catalogue from the (possibly-new) source, and
+##      re-applies the template to every generated Application — which
+##      restores spec.syncPolicy.automated that `detach` had cleared.
+##
+## Source-redirection semantics:
+##   The AS's git generator only governs WHERE the catalogue is read
+##   from. Each generated Application's source.repoURL still comes from
+##   entries IN that catalogue (the AS template substitutes
+##   {{ .repoURL }} per entry). To redirect a specific Application, fork
+##   the catalogue repo, edit the entry, push, and attach to your fork.
+##
+## Output:
+##   - Status messages           → stderr
+##   - TSV per attached AS       → stdout (POST-redirect values):
+##                                 <name>\t<repoURL>\t<revision>
+
+set -eu
+
+NAMESPACE="${NAMESPACE:-argocd}"
+TARGET="${1:-}"
+NEW_REPO="${2:-}"
+NEW_REV="${3:-}"
+
+# Source redirection requires an explicit target — refuse silent
+# bulk-redirect of every AS to the same upstream (almost always a mistake).
+if [[ -n "$NEW_REPO" && -z "$TARGET" ]]; then
+	echo "ERROR: <name> is required when <repoURL> is supplied" >&2
+	echo "       (refusing to redirect every AS to the same source)" >&2
+	exit 1
+fi
+
+if [[ -n "$TARGET" ]]; then
+	APPSETS=( "$TARGET" )
+else
+	mapfile -t APPSETS < <(kubectl -n "$NAMESPACE" get applicationset \
+		-o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+fi
+
+[[ "${#APPSETS[@]}" -gt 0 ]] || { echo "no ApplicationSets in namespace $NAMESPACE" >&2; exit 1; }
+
+for AS in "${APPSETS[@]}"; do
+	echo "[ ATTACH ] $AS" >&2
+
+	if [[ -n "$NEW_REPO" ]]; then
+		kubectl -n "$NAMESPACE" patch applicationset "$AS" --type=json \
+			-p="[{\"op\":\"replace\",\"path\":\"/spec/generators/0/git/repoURL\",\"value\":\"$NEW_REPO\"}]" \
+			>/dev/null
+		echo "  + git.repoURL → $NEW_REPO" >&2
+	fi
+	if [[ -n "$NEW_REV" ]]; then
+		kubectl -n "$NAMESPACE" patch applicationset "$AS" --type=json \
+			-p="[{\"op\":\"replace\",\"path\":\"/spec/generators/0/git/revision\",\"value\":\"$NEW_REV\"}]" \
+			>/dev/null
+		echo "  + git.revision → $NEW_REV" >&2
+	fi
+
+	# Remove skip-reconcile (trailing `-` is kubectl annotation-delete syntax).
+	kubectl -n "$NAMESPACE" annotate applicationset "$AS" \
+		argocd.argoproj.io/skip-reconcile- >/dev/null 2>&1 || true
+
+	# Force immediate reconcile — AS re-reads catalogue + re-applies
+	# template to all generated Applications, restoring automated sync.
+	kubectl -n "$NAMESPACE" annotate applicationset "$AS" \
+		argocd.argoproj.io/refresh=hard --overwrite >/dev/null
+	echo "  + skip-reconcile cleared + hard refresh triggered" >&2
+
+	# Read POST-patch values for the inventory line.
+	REPO=$(kubectl -n "$NAMESPACE" get applicationset "$AS" \
+		-o jsonpath='{.spec.generators[0].git.repoURL}' 2>/dev/null || echo "")
+	REV=$(kubectl -n "$NAMESPACE" get applicationset "$AS" \
+		-o jsonpath='{.spec.generators[0].git.revision}' 2>/dev/null || echo "")
+	printf '%s\t%s\t%s\n' "$AS" "$REPO" "$REV"
+done
