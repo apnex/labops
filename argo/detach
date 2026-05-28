@@ -1,7 +1,9 @@
 #!/bin/bash
 ## module: argo/detach
-## purpose: disable Argo CD sync for ApplicationSets (workloads keep running;
-##          upstream commits no longer auto-propagate to the cluster)
+## purpose: pause Argo CD sync for ApplicationSets (workloads keep running;
+##          upstream commits no longer auto-propagate). With --forget, also
+##          remove the ApplicationSet + its generated Applications entirely
+##          (workloads still preserved — fully orphaned from GitOps).
 ## inputs:  KUBECONFIG
 ## needs:   -
 
@@ -10,28 +12,77 @@
 export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
 
 ## Usage:
-##   detach            # detach every ApplicationSet in the argocd namespace
-##   detach <name>     # detach only the named ApplicationSet
+##   detach                          # soft-pause every AS in argocd ns
+##   detach <name>                   # soft-pause the named AS only
+##   detach --forget                 # orphan-delete every AS (workloads kept)
+##   detach <name> --forget          # orphan-delete the named AS
+##   detach --forget <name>          # (same — flag order doesn't matter)
 ##
-## Effect (fully reversible by `attach`):
-##   1. ApplicationSet ← annotate argocd.argoproj.io/skip-reconcile=true
-##      → AS controller stops regenerating Apps from git
-##   2. Each generated Application ← patch spec.syncPolicy.automated = null
-##      → Argo stops auto-syncing on git changes or drift
+## Soft mode (no --forget) — reversible by `attach`:
+##   1. AS  ← annotate argocd.argoproj.io/skip-reconcile=true
+##   2. Each generated App ← patch spec.syncPolicy.automated = null
 ##
-## What is NOT touched (deliberate symmetry with attach):
-##   - spec.generators[0].git.repoURL    (source URL preserved)
+## --forget mode — Argo objects deleted; only re-applying the AS manifest
+##   restores GitOps control. Steps:
+##   1. Soft-pause as above (so nothing tries to sync during teardown).
+##   2. For each generated App:
+##        a. Patch metadata.finalizers = null  ← removes Argo's
+##           `resources-finalizer.argocd.argoproj.io` which would
+##           otherwise prune the workload on App delete.
+##        b. Delete the App.
+##   3. Delete the ApplicationSet.
+##
+## What is NEVER touched (both modes):
+##   - spec.generators[0].git.repoURL    (source preserved)
 ##   - spec.generators[0].git.revision   (revision preserved)
-##   - Cluster workloads (Pods/Services/ConfigMaps/Secrets all unchanged)
+##   - Cluster workloads in destination namespaces (Pods/Services/
+##     ConfigMaps/Secrets/PVCs all unchanged)
 ##
 ## Output:
-##   - Status messages          → stderr
-##   - TSV per detached AS      → stdout: <name>\t<repoURL>\t<revision>
+##   - Status messages       → stderr
+##   - TSV per AS            → stdout: <name>\t<repoURL>\t<revision>
+##   - --forget reverse hint → stdout: # comment line with a
+##     `kubectl apply -f <URL>` to re-adopt. URL is derived from the AS
+##     spec via these conventions:
+##       - github.com → raw.githubusercontent.com
+##       - revision HEAD → main (GitHub's default branch)
+##       - AS manifest at services.appset.yaml colocated with services.yaml
+##         (the kate bundle convention)
+##     Non-conforming ASes (non-GitHub, exotic layouts, custom default
+##     branches) get a wrong URL — operator notices and re-applies from
+##     their actual source.
 
 set -eu
 
 NAMESPACE="${NAMESPACE:-argocd}"
-TARGET="${1:-}"
+TARGET=""
+FORGET=false
+
+for arg in "$@"; do
+	case "$arg" in
+		--forget) FORGET=true ;;
+		-*) echo "ERROR: unknown flag: $arg" >&2; exit 1 ;;
+		*)
+			if [[ -z "$TARGET" ]]; then
+				TARGET="$arg"
+			else
+				echo "ERROR: too many positional args (got '$TARGET' and '$arg')" >&2
+				exit 1
+			fi
+			;;
+	esac
+done
+
+# Derive a raw.githubusercontent.com URL for the AS manifest from
+# kate-convention spec fields. Empty on derivation failure.
+derive_reverse_url() {
+	local repo="$1" rev="$2" services_path="$3"
+	[[ -n "$repo" && -n "$services_path" ]] || { echo ""; return; }
+	[[ "$rev" == "HEAD" || -z "$rev" ]] && rev="main"
+	local raw_repo="${repo/github.com/raw.githubusercontent.com}"
+	local appset_path="${services_path%/*}/services.appset.yaml"
+	echo "${raw_repo}/${rev}/${appset_path}"
+}
 
 if [[ -n "$TARGET" ]]; then
 	APPSETS=( "$TARGET" )
@@ -47,13 +98,19 @@ for AS in "${APPSETS[@]}"; do
 		-o jsonpath='{.spec.generators[0].git.repoURL}' 2>/dev/null || echo "")
 	REV=$(kubectl -n "$NAMESPACE" get applicationset "$AS" \
 		-o jsonpath='{.spec.generators[0].git.revision}' 2>/dev/null || echo "")
+	SERVICES_PATH=$(kubectl -n "$NAMESPACE" get applicationset "$AS" \
+		-o jsonpath='{.spec.generators[0].git.files[0].path}' 2>/dev/null || echo "")
 
-	echo "[ DETACH ] $AS  (source preserved: ${REPO}@${REV})" >&2
+	if [[ "$FORGET" == "true" ]]; then
+		echo "[ DETACH --forget ] $AS  (source: ${REPO}@${REV})" >&2
+	else
+		echo "[ DETACH ] $AS  (source preserved: ${REPO}@${REV})" >&2
+	fi
 
+	# Soft-pause (both modes).
 	kubectl -n "$NAMESPACE" annotate applicationset "$AS" \
 		argocd.argoproj.io/skip-reconcile=true --overwrite >/dev/null
 
-	# Apps generated by an AS carry the label argocd.argoproj.io/applicationset-name=<as>.
 	mapfile -t APPS < <(kubectl -n "$NAMESPACE" get app \
 		-l "argocd.argoproj.io/applicationset-name=$AS" \
 		-o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
@@ -64,5 +121,31 @@ for AS in "${APPSETS[@]}"; do
 		echo "  + Application $APP: automated sync disabled" >&2
 	done
 
+	if [[ "$FORGET" == "true" ]]; then
+		for APP in "${APPS[@]}"; do
+			# Clear the Argo finalizer — otherwise App delete would
+			# trigger workload prune. With finalizer gone, delete just
+			# removes the App object; workloads stay in their namespace.
+			kubectl -n "$NAMESPACE" patch app "$APP" --type=merge \
+				-p='{"metadata":{"finalizers":null}}' >/dev/null
+			kubectl -n "$NAMESPACE" delete app "$APP" --wait=false >/dev/null
+			echo "  + Application $APP: orphan-deleted (workloads preserved)" >&2
+		done
+		# AS has no Apps left to cascade through; clean delete.
+		kubectl -n "$NAMESPACE" delete applicationset "$AS" --wait=false >/dev/null
+		echo "  + ApplicationSet $AS: deleted" >&2
+	fi
+
+	# TSV inventory (both modes).
 	printf '%s\t%s\t%s\n' "$AS" "$REPO" "$REV"
+
+	# --forget reverse hint.
+	if [[ "$FORGET" == "true" ]]; then
+		URL=$(derive_reverse_url "$REPO" "$REV" "$SERVICES_PATH")
+		if [[ -n "$URL" ]]; then
+			echo "# --forget reverse: kubectl apply -f $URL"
+		else
+			echo "# --forget reverse: (URL not derivable — re-apply your services.appset.yaml manually)"
+		fi
+	fi
 done
