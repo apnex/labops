@@ -1,7 +1,8 @@
 #!/bin/bash
 ## module: argo/attach
-## purpose: re-enable Argo CD sync for ApplicationSets, optionally
-##          redirecting the catalogue source to a different repo/revision
+## purpose: list attachable ApplicationSets, OR re-enable Argo CD sync
+##          for them, optionally redirecting the catalogue source to a
+##          different repo/revision.
 ## inputs:  KUBECONFIG
 ## needs:   -
 
@@ -10,52 +11,105 @@
 export PATH="/usr/local/sbin:/usr/local/bin:${PATH}"
 
 ## Usage:
-##   attach                                 # attach every AS in argocd ns
-##   attach <name>                          # attach the named AS only
-##   attach <name> <repoURL>                # attach + redirect catalogue source
-##   attach <name> <repoURL> <revision>     # attach + redirect source + revision
+##   attach                                  # LIST mode: TSV of currently-detached ASes
+##   attach <name>                           # attach the named AS only
+##   attach --all                            # attach every AS (explicit bulk)
+##   attach <name> <repoURL>                 # attach + redirect catalogue source
+##   attach <name> <repoURL> <revision>      # attach + redirect source + revision
 ##
-## Examples:
-##   attach
-##   attach kate-minimal
-##   attach kate-minimal https://github.com/me/kate
-##   attach kate-minimal https://github.com/me/kate dev
+## Mode detection:
+##   - no positional, no --all  → LIST mode (no mutations)
+##   - <name>                   → act on that AS only
+##   - --all                    → act on every AS in argocd ns
+##   - <name> + <repoURL> [+ <revision>]  → attach + redirect (single AS only)
 ##
-## Effect:
+## Validation:
+##   --all and <name>     mutually exclusive
+##   --all and <repoURL>  mutually exclusive (can't bulk-redirect to one source)
+##   <repoURL> requires <name>
+##
+## Effect (action mode):
 ##   1. (Optional) Patch ApplicationSet spec.generators[0].git.repoURL
 ##      and/or .revision via JSON patch — redirects the CATALOGUE source.
 ##   2. Remove argocd.argoproj.io/skip-reconcile annotation if present.
 ##   3. Trigger an immediate hard refresh → AS reconciles within seconds,
-##      re-reads its catalogue from the (possibly-new) source, and
-##      re-applies the template to every generated Application — which
-##      restores spec.syncPolicy.automated that `detach` had cleared.
-##
-## Source-redirection semantics:
-##   The AS's git generator only governs WHERE the catalogue is read
-##   from. Each generated Application's source.repoURL still comes from
-##   entries IN that catalogue (the AS template substitutes
-##   {{ .repoURL }} per entry). To redirect a specific Application, fork
-##   the catalogue repo, edit the entry, push, and attach to your fork.
+##      re-reads the catalogue, and re-applies the template to every
+##      generated Application — which restores spec.syncPolicy.automated
+##      that `detach` had cleared.
 ##
 ## Output:
-##   - Status messages           → stderr
-##   - TSV per attached AS       → stdout (POST-redirect values):
-##                                 <name>\t<repoURL>\t<revision>
+##   - Status messages     → stderr
+##   - LIST mode TSV       → stdout: <name>\t<repoURL>\t<revision>\tdetached
+##                           (only ASes that are currently detached)
+##   - Action mode TSV     → stdout: <name>\t<repoURL>\t<revision>
+##                           (POST-redirect values)
 
 set -eu
 
 NAMESPACE="${NAMESPACE:-argocd}"
-TARGET="${1:-}"
-NEW_REPO="${2:-}"
-NEW_REV="${3:-}"
+TARGET=""
+NEW_REPO=""
+NEW_REV=""
+ALL=false
+POSITIONAL=()
 
-# Source redirection requires an explicit target — refuse silent
-# bulk-redirect of every AS to the same upstream (almost always a mistake).
-if [[ -n "$NEW_REPO" && -z "$TARGET" ]]; then
-	echo "ERROR: <name> is required when <repoURL> is supplied" >&2
-	echo "       (refusing to redirect every AS to the same source)" >&2
+for arg in "$@"; do
+	case "$arg" in
+		--all) ALL=true ;;
+		-*)    echo "ERROR: unknown flag: $arg" >&2; exit 1 ;;
+		*)     POSITIONAL+=( "$arg" ) ;;
+	esac
+done
+
+if [[ "${#POSITIONAL[@]}" -gt 3 ]]; then
+	echo "ERROR: too many positional args (max 3: <name> [<repoURL> [<revision>]])" >&2
 	exit 1
 fi
+[[ "${#POSITIONAL[@]}" -ge 1 ]] && TARGET="${POSITIONAL[0]}"
+[[ "${#POSITIONAL[@]}" -ge 2 ]] && NEW_REPO="${POSITIONAL[1]}"
+[[ "${#POSITIONAL[@]}" -ge 3 ]] && NEW_REV="${POSITIONAL[2]}"
+
+if [[ "$ALL" == "true" && -n "$TARGET" ]]; then
+	echo "ERROR: --all and <name> are mutually exclusive" >&2
+	exit 1
+fi
+if [[ "$ALL" == "true" && -n "$NEW_REPO" ]]; then
+	echo "ERROR: --all and <repoURL> are mutually exclusive" >&2
+	exit 1
+fi
+if [[ -n "$NEW_REPO" && -z "$TARGET" ]]; then
+	echo "ERROR: <name> is required when <repoURL> is supplied" >&2
+	exit 1
+fi
+
+# Helpers ────────────────────────────────────────────────────────────
+
+as_status() {
+	local as="$1"
+	local skip
+	skip=$(kubectl -n "$NAMESPACE" get applicationset "$as" \
+		-o jsonpath='{.metadata.annotations.argocd\.argoproj\.io/skip-reconcile}' \
+		2>/dev/null)
+	[[ "$skip" == "true" ]] && echo "detached" || echo "attached"
+}
+
+get_repo() { kubectl -n "$NAMESPACE" get applicationset "$1" -o jsonpath='{.spec.generators[0].git.repoURL}'  2>/dev/null || true; }
+get_rev()  { kubectl -n "$NAMESPACE" get applicationset "$1" -o jsonpath='{.spec.generators[0].git.revision}' 2>/dev/null || true; }
+
+# LIST mode ──────────────────────────────────────────────────────────
+
+if [[ -z "$TARGET" && "$ALL" != "true" ]]; then
+	echo "# attachable ApplicationSets (currently detached) in namespace $NAMESPACE:" >&2
+	mapfile -t ALL_AS < <(kubectl -n "$NAMESPACE" get applicationset \
+		-o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+	for AS in "${ALL_AS[@]}"; do
+		[[ "$(as_status "$AS")" == "detached" ]] || continue
+		printf '%s\t%s\t%s\tdetached\n' "$AS" "$(get_repo "$AS")" "$(get_rev "$AS")"
+	done
+	exit 0
+fi
+
+# Action mode ────────────────────────────────────────────────────────
 
 if [[ -n "$TARGET" ]]; then
 	APPSETS=( "$TARGET" )
@@ -63,7 +117,6 @@ else
 	mapfile -t APPSETS < <(kubectl -n "$NAMESPACE" get applicationset \
 		-o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
 fi
-
 [[ "${#APPSETS[@]}" -gt 0 ]] || { echo "no ApplicationSets in namespace $NAMESPACE" >&2; exit 1; }
 
 for AS in "${APPSETS[@]}"; do
@@ -82,20 +135,11 @@ for AS in "${APPSETS[@]}"; do
 		echo "  + git.revision → $NEW_REV" >&2
 	fi
 
-	# Remove skip-reconcile (trailing `-` is kubectl annotation-delete syntax).
 	kubectl -n "$NAMESPACE" annotate applicationset "$AS" \
 		argocd.argoproj.io/skip-reconcile- >/dev/null 2>&1 || true
-
-	# Force immediate reconcile — AS re-reads catalogue + re-applies
-	# template to all generated Applications, restoring automated sync.
 	kubectl -n "$NAMESPACE" annotate applicationset "$AS" \
 		argocd.argoproj.io/refresh=hard --overwrite >/dev/null
 	echo "  + skip-reconcile cleared + hard refresh triggered" >&2
 
-	# Read POST-patch values for the inventory line.
-	REPO=$(kubectl -n "$NAMESPACE" get applicationset "$AS" \
-		-o jsonpath='{.spec.generators[0].git.repoURL}' 2>/dev/null || echo "")
-	REV=$(kubectl -n "$NAMESPACE" get applicationset "$AS" \
-		-o jsonpath='{.spec.generators[0].git.revision}' 2>/dev/null || echo "")
-	printf '%s\t%s\t%s\n' "$AS" "$REPO" "$REV"
+	printf '%s\t%s\t%s\n' "$AS" "$(get_repo "$AS")" "$(get_rev "$AS")"
 done
