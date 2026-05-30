@@ -2,7 +2,7 @@
 ## module: metallb/prepare
 ## purpose: configure MetalLB L2 to advertise the host IP for LoadBalancer services
 ## inputs:  KUBECONFIG, LABOPS_ROOT
-## needs:   healthcheck/k8s-local, healthcheck/k8s-deployment-ready
+## needs:   healthcheck/k8s-local, healthcheck/k8s-endpoints-ready
 
 ## must run as root; restore /usr/local/bin in PATH (RHEL sudo strips it)
 [[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "must be run as root" >&2; exit 1; }
@@ -19,9 +19,12 @@ command -v run >/dev/null 2>&1 || run() {
 	fi
 }
 
-## wait for the API and the MetalLB controller
+## wait for the API, then for the MetalLB validating webhook to be reachable.
+## endpoints-ready on the webhook service is the precise precondition (the
+## apply 502s until a live backend exists) and subsumes controller deployment-
+## ready — a Service only gets READY endpoints once its backing pod is Ready.
 run healthcheck/k8s-local
-run healthcheck/k8s-deployment-ready controller metallb-system
+run healthcheck/k8s-endpoints-ready metallb-webhook-service metallb-system
 
 ## determine the IPv4 address of the default-route interface
 ETH=$(ip route show default | awk '/default/ {print $5; exit}')
